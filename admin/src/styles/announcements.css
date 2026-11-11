@@ -1,0 +1,41 @@
+.announcements-page .employee-page-heading { flex-wrap: wrap; }
+.announcements-page .announcements-heading-icon { color: #ad7615; background: #fff3d3; }
+.announcements-page .employee-page-heading > .button svg { color: #f5d37a; }
+.announcements-card { padding: 0; overflow: hidden; }
+.announcements-table { width: 100%; min-width: 760px; table-layout: fixed; }
+.announcements-table th, .announcements-table td { padding: 24px 16px; }
+.announcements-table th { text-transform: uppercase; font-size: 10px; letter-spacing: .6px; white-space: normal; }
+.announcements-table th:first-child { width: 50%; }
+.announcements-table th:nth-child(2) { width: 16%; }
+.announcements-table th:nth-child(3) { width: 10%; }
+.announcements-table th:nth-child(4) { width: 14%; }
+.announcements-table th:last-child { width: 10%; }
+.announcements-table td { white-space: normal; overflow-wrap: anywhere; color: var(--text-secondary); line-height: 1.7; }
+.announcements-table td strong { display: block; font-size: 14px; font-weight: 650; color: var(--text-primary); }
+.announcements-table td p { margin: 5px 0 0; font-size: 12px; white-space: pre-wrap; }
+.announcements-table th:last-child, .announcements-table td:last-child { text-align: center; }
+.announcement-audience { display: inline-block; border-radius: 20px; padding: 3px 10px; font-size: 10px; font-weight: 700; line-height: 1.5; }
+.announcement-audience-all { color: #087348; background: #ddf8e8; }
+.announcement-audience-employees { color: #245a91; background: #e3efff; }
+.announcement-audience-public { color: #935a05; background: #fff4c2; }
+.announcement-delete { color: var(--text-muted); }
+.announcement-delete:hover { color: #b42344; background: #fff0f3; }
+.announcements-search-result { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; color: var(--text-secondary); }
+.announcement-modal { width: min(680px, calc(100vw - 32px)); }
+.announcement-modal .modal-heading { border: 0; padding-bottom: 0; }
+.announcement-modal .modal-heading h2 { display: flex; align-items: center; gap: 12px; }
+.announcement-modal .modal-heading h2 svg { flex-shrink: 0; color: #d9a426; }
+.announcement-fields { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+.announcement-fields label { text-transform: uppercase; letter-spacing: .6px; }
+.announcement-fields input, .announcement-fields select, .announcement-fields textarea { text-transform: none; letter-spacing: normal; border-radius: 10px; min-height: 44px; }
+.announcement-fields textarea { min-height: 150px; resize: vertical; }
+.announcement-fields .field-error { text-transform: none; letter-spacing: normal; }
+.announcement-fields [aria-invalid="true"] { border-color: #b42344; }
+@media (max-width: 700px) {
+  .announcements-page .employee-page-heading > .button { margin-left: 62px; }
+  .announcement-modal .modal-heading h2 { font-size: 19px; }
+}
+@media (max-width: 420px) {
+  .announcements-page .employee-page-heading > .button { width: 100%; margin-left: 0; }
+  .announcements-search-result { align-items: flex-start; }
+}

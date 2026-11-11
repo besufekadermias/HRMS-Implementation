@@ -1,0 +1,48 @@
+.rewards-page .employee-page-heading { flex-wrap: wrap; }
+.rewards-page .rewards-heading-icon { background: #fff3d3; color: #ad7615; }
+.rewards-page .employee-page-heading > .button svg { color: #f5d37a; }
+.rewards-card { padding: 0; overflow: hidden; }
+.rewards-table { width: 100%; min-width: 800px; table-layout: fixed; }
+.rewards-table th, .rewards-table td { padding: 20px 12px; }
+.rewards-table th { text-transform: uppercase; font-size: 10px; letter-spacing: .6px; }
+.rewards-table th:first-child { width: 17%; }
+.rewards-table th:nth-child(2) { width: 22%; }
+.rewards-table th:nth-child(3) { width: 14%; }
+.rewards-table th:nth-child(4) { width: 15%; }
+.rewards-table th:nth-child(5) { width: 12%; }
+.rewards-table th:last-child { width: 64px; }
+.rewards-table td { white-space: normal; overflow-wrap: anywhere; color: var(--text-secondary); line-height: 1.6; }
+.rewards-table td strong { color: var(--text-primary); font-weight: 650; }
+.rewards-table td:last-child, .rewards-table th:last-child { text-align: center; }
+.recognition-employee { display: block; }
+.recognition-employee-id { display: block; color: var(--text-muted); font-size: 11px; }
+.recognition-category { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 10px; line-height: 1.5; font-weight: 700; text-transform: uppercase; letter-spacing: .2px; white-space: nowrap; }
+.recognition-category-excellence { color: #076755; background: #e0f5ed; }
+.recognition-category-innovation { color: #8d5700; background: #fff5bf; }
+.recognition-category-long_service { color: #6d45a3; background: #f0e8fb; }
+.recognition-category-punctuality { color: #225e9a; background: #e5f1fc; }
+.rewards-table .recognition-date { white-space: nowrap; }
+.recognition-description { white-space: pre-wrap !important; }
+.recognition-delete { color: var(--text-muted); }
+.recognition-delete:hover { color: #b42344; background: #fff0f3; }
+.rewards-search-result { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 15px; color: var(--text-secondary); }
+.rewards-card .empty-state { padding: 48px 20px; }
+.rewards-card .empty-state > svg { color: #ad7615; }
+.recognition-modal { width: min(580px, calc(100vw - 32px)); }
+.recognition-modal .modal-heading { border-bottom: 0; padding-bottom: 0; }
+.recognition-modal .modal-heading h2 { display: flex; align-items: center; gap: 10px; }
+.recognition-modal .modal-heading h2 svg { color: #d9a426; }
+.recognition-fields { grid-template-columns: minmax(0, 1fr); gap: 20px; border: 0; padding: 0; margin: 0; min-width: 0; }
+.recognition-fields label { text-transform: uppercase; letter-spacing: .6px; }
+.recognition-fields input, .recognition-fields select, .recognition-fields textarea { text-transform: none; letter-spacing: normal; border-radius: 10px; min-height: 44px; }
+.recognition-fields textarea { min-height: 100px; }
+.recognition-fields .field-error { text-transform: none; letter-spacing: normal; }
+.recognition-fields [aria-invalid="true"] { border-color: #b42344; }
+@media (max-width: 700px) {
+  .rewards-page .employee-page-heading > .button { margin-left: 62px; }
+  .rewards-search-result { align-items: flex-start; }
+  .recognition-modal .modal-heading h2 { font-size: 19px; }
+}
+@media (max-width: 420px) {
+  .rewards-page .employee-page-heading > .button { margin-left: 0; width: 100%; }
+}

@@ -1,0 +1,35 @@
+:root {
+  font-family:
+    'Segoe UI',
+    -apple-system,
+    BlinkMacSystemFont,
+    Arial,
+    sans-serif;
+  color: #092a32;
+  background: #f3f8f9;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  --surface: #fff;
+  --page-bg: #f3f8f9;
+  --search-bg: #f2f6fa;
+  --sidebar-bg: #0c3333;
+  --sidebar-bottom: #082b2c;
+  --nav-active: #1a6259;
+  --sidebar-text: #d8e7e7;
+  --sidebar-muted: #9cb9bd;
+  --primary: #087f6d;
+  --primary-hover: #066756;
+  --brand: #10b981;
+  --text-primary: #092a32;
+  --text-secondary: #466b82;
+  --text-muted: #628097;
+  --border: #e3eef2;
+  --divider: #ecf2f5;
+  --icon-bg: #e0f5ef;
+  --sidebar-width: 252px;
+  --header-height: 72px;
+  --card-radius: 11px;
+  --card-shadow: 0 2px 8px rgba(9, 42, 50, 0.025);
+}

@@ -1,0 +1,128 @@
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--page-bg);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 36px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 8px 30px #092a3208;
+}
+
+.login-logo {
+  display: block;
+  margin-bottom: 16px;
+}
+
+.login-brand {
+  margin-bottom: 12px;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.login-subtitle {
+  margin-top: 10px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.login-form {
+  margin-top: 28px;
+}
+
+.login-form label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.login-input {
+  width: 100%;
+  margin-bottom: 20px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+.login-input:focus {
+  border-color: var(--primary);
+}
+
+.login-form .login-show-password {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.login-show-password input {
+  margin: 0;
+  accent-color: var(--primary);
+}
+
+.login-submit,
+.login-demo-button {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--primary);
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.login-submit {
+  background: var(--primary);
+  color: white;
+}
+
+.login-submit:hover {
+  background: var(--primary-hover);
+}
+
+.login-demo-button {
+  margin-top: 12px;
+  background: var(--surface);
+  color: var(--primary);
+}
+
+.login-demo-button:hover {
+  background: var(--icon-bg);
+}
+
+.login-error {
+  margin-bottom: 16px;
+  color: #b43643;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.login-demo-note,
+.login-help {
+  margin-top: 16px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .login-page {
+    padding: 16px;
+  }
+
+  .login-card {
+    padding: 24px;
+  }
+}

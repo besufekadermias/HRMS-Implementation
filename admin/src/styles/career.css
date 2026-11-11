@@ -1,0 +1,58 @@
+.career-page .employee-page-heading { flex-wrap: wrap; }
+.career-page .career-heading-icon { background: #e1f5ee; color: #08764c; }
+.career-page .employee-page-heading > .button svg { color: #f5d37a; }
+.career-card { padding: 0; overflow: hidden; }
+.career-table { width: 100%; min-width: 800px; table-layout: fixed; }
+.career-table th, .career-table td { padding: 20px 12px; }
+.career-table th { text-transform: uppercase; font-size: 10px; letter-spacing: .6px; }
+.career-table th:first-child { width: 16%; }
+.career-table th:nth-child(2) { width: 19%; }
+.career-table th:nth-child(3), .career-table th:nth-child(4) { width: 14%; }
+.career-table th:nth-child(5) { width: 13%; }
+.career-table td { white-space: normal; overflow-wrap: anywhere; color: var(--text-secondary); line-height: 1.6; }
+.career-table td strong { color: var(--text-primary); font-weight: 650; }
+.career-table td .career-promoted-grade { color: #087c42; }
+.career-employee { display: block; }
+.career-employee-id { display: block; color: var(--text-muted); font-size: 11px; }
+.career-type { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 10px; line-height: 1.5; font-weight: 700; text-transform: uppercase; letter-spacing: .2px; white-space: nowrap; }
+.career-type-promotion { color: #076755; background: #e0f5ed; }
+.career-type-step_increment { color: #6d45a3; background: #f0e8fb; }
+.career-type-grade_change { color: #245389; background: #e0ecfc; }
+.career-type-award_milestone { color: #8d5700; background: #fff5bf; }
+.career-effective-date time { white-space: nowrap; }
+.career-status { display: block; color: var(--text-muted); font-size: 10px; margin-top: 5px; }
+.career-status-scheduled { color: #245389; }
+.career-status-needs_review, .career-review-reason { color: #a64b0a; }
+.career-cancel-plan { display: block; padding: 3px 0; margin-top: 3px; border: 0; background: none; text-decoration: underline; font-size: 11px; color: var(--text-secondary); }
+.career-table .career-description { white-space: pre-wrap; }
+.career-review-reason { margin-top: 8px; font-size: 11px; }
+.career-search-result { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 15px; color: var(--text-secondary); }
+.career-card .empty-state { padding: 48px 20px; }
+.career-modal { width: min(680px, calc(100vw - 32px)); }
+.career-modal .modal-heading { border-bottom: 0; padding-bottom: 0; }
+.career-modal .modal-heading h2 { display: flex; align-items: center; gap: 10px; }
+.career-modal .modal-heading h2 svg { color: #d9a426; }
+.career-fields { gap: 20px; border: 0; padding: 0; margin: 0; min-width: 0; }
+.career-fields label { text-transform: uppercase; letter-spacing: .6px; }
+.career-fields input, .career-fields select, .career-fields textarea { text-transform: none; letter-spacing: normal; border-radius: 10px; min-height: 44px; }
+.career-fields select.career-new-grade { color: #087c42; font-weight: 600; }
+.career-fields textarea { min-height: 100px; }
+.career-fields .field-error { text-transform: none; letter-spacing: normal; }
+.career-fields [aria-invalid="true"] { border-color: #b42344; }
+.career-impact { margin-top: 18px; padding: 14px 16px; border: 1px solid #d6ebe3; border-radius: 10px; background: #f1faf6; color: #34685a; font-size: 12px; line-height: 1.6; }
+.career-impact > strong { color: #145c44; }
+.career-impact p { margin-top: 4px; }
+.career-impact-grades { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; margin-top: 6px; }
+@media (max-width: 700px) {
+  .career-page .employee-page-heading > .button { margin-left: 62px; }
+  .career-search-result { align-items: flex-start; }
+  .career-modal .modal-heading h2 { font-size: 19px; align-items: flex-start; }
+}
+@media (max-width: 480px) {
+  .career-fields { grid-template-columns: minmax(0, 1fr); }
+  .career-modal .modal-actions { flex-wrap: wrap; }
+  .career-modal .modal-actions .button-primary { flex: 1; }
+}
+@media (max-width: 420px) {
+  .career-page .employee-page-heading > .button { margin-left: 0; width: 100%; }
+}

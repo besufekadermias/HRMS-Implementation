@@ -1,0 +1,60 @@
+.discipline-page .employee-page-heading { flex-wrap: wrap; }
+.discipline-page .discipline-heading-icon { background: #ffe9eb; color: #d5152c; }
+.button-discipline { color: white; background: #df0015; border: 1px solid #df0015; }
+.button-discipline:hover { background: #bd0012; border-color: #bd0012; }
+.discipline-card { padding: 0; overflow: hidden; }
+.discipline-table { width: 100%; min-width: 800px; table-layout: fixed; }
+.discipline-table th, .discipline-table td { padding: 20px 12px; }
+.discipline-table th { text-transform: uppercase; font-size: 10px; letter-spacing: .6px; }
+.discipline-table th:first-child { width: 15%; }
+.discipline-table th:nth-child(2) { width: 22%; }
+.discipline-table th:nth-child(3) { width: 12%; }
+.discipline-table th:nth-child(4) { width: 14%; }
+.discipline-table th:nth-child(5) { width: 15%; }
+.discipline-table th:last-child { width: 64px; }
+.discipline-table td { white-space: normal; overflow-wrap: anywhere; color: var(--text-secondary); line-height: 1.6; }
+.discipline-table td strong { color: var(--text-primary); font-weight: 650; }
+.discipline-table td:last-child, .discipline-table th:last-child { text-align: center; }
+.discipline-employee { display: block; }
+.discipline-employee-id { display: block; color: var(--text-muted); font-size: 11px; }
+.discipline-sanction { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 10px; line-height: 1.5; font-weight: 700; text-transform: uppercase; letter-spacing: .2px; white-space: nowrap; }
+.discipline-sanction-warning { color: #936000; background: #fff1d8; }
+.discipline-sanction-fine { color: #8d5700; background: #fff5bf; }
+.discipline-sanction-suspension { color: #9b3c15; background: #ffeadf; }
+.discipline-sanction-termination { color: #b42344; background: #ffe8ee; }
+.discipline-table .discipline-date { white-space: nowrap; }
+.discipline-table .discipline-description { white-space: pre-wrap; }
+.discipline-delete { color: var(--text-muted); }
+.discipline-delete:hover { color: #b42344; background: #fff0f3; }
+.discipline-search-result { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 15px; color: var(--text-secondary); }
+.discipline-card .empty-state { padding: 48px 20px; }
+.discipline-history-action { display: flex; justify-content: flex-end; margin-top: 14px; }
+.discipline-history-action .button { font-size: 12px; }
+.discipline-modal { width: min(580px, calc(100vw - 32px)); }
+.discipline-modal .modal-heading { border-bottom: 0; padding-bottom: 0; }
+.discipline-modal .modal-heading h2 { display: flex; align-items: center; gap: 10px; }
+.discipline-modal .modal-heading h2 svg { color: #df0015; }
+.discipline-fields { grid-template-columns: minmax(0, 1fr); gap: 20px; border: 0; padding: 0; margin: 0; min-width: 0; }
+.discipline-fields label { text-transform: uppercase; letter-spacing: .6px; }
+.discipline-fields input, .discipline-fields select, .discipline-fields textarea { text-transform: none; letter-spacing: normal; border-radius: 10px; min-height: 44px; }
+.discipline-fields textarea { min-height: 100px; }
+.discipline-fields .field-error { text-transform: none; letter-spacing: normal; }
+.discipline-fields [aria-invalid="true"] { border-color: #b42344; }
+.discipline-history { list-style: none; padding: 0; margin: 0; }
+.discipline-history li { display: flex; align-items: flex-start; gap: 12px; padding: 18px 0; border-bottom: 1px solid var(--divider); }
+.discipline-history li:first-child { padding-top: 0; }
+.discipline-history li > div { flex: 1; min-width: 0; }
+.discipline-history-icon { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0; color: var(--primary); background: #e0f5ed; }
+.discipline-history-icon.is-deleted { color: #b42344; background: #ffe8ee; }
+.discipline-history-heading { display: flex; gap: 10px; flex-wrap: wrap; justify-content: space-between; margin-bottom: 6px; }
+.discipline-history-heading time, .discipline-history small { font-size: 11px; color: var(--text-muted); }
+.discipline-history p { font-size: 12px; line-height: 1.7; color: var(--text-secondary); overflow-wrap: anywhere; }
+.discipline-history .discipline-history-description { white-space: pre-wrap; margin-top: 6px; }
+@media (max-width: 700px) {
+  .discipline-page .employee-page-heading > .button { margin-left: 62px; }
+  .discipline-search-result { align-items: flex-start; }
+  .discipline-modal .modal-heading h2 { font-size: 19px; }
+}
+@media (max-width: 420px) {
+  .discipline-page .employee-page-heading > .button { margin-left: 0; width: 100%; }
+}
