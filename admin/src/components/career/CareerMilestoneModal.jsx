@@ -1,71 +1,85 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useForm, useWatch } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { careerMilestoneFormSchema } from '../../utils/validation/growthSchemas.js'
+import { showFormErrors } from '../../utils/validation/formErrors.js'
 import Modal from '../common/Modal.jsx'
 import ConfirmationModal from '../common/ConfirmationModal.jsx'
 import Icon from '../common/Icon.jsx'
-import { MILESTONE_TYPES, careerChangeContext, validateCareerMilestone } from '../../services/growth/careerService.js'
+import { MILESTONE_TYPES, careerChangeContext, validateCareerMilestoneRules } from '../../services/growth/careerService.js'
 import { todayInNairobi } from '../../utils/validation/validators.js'
 import formatCurrency from '../../utils/formatters/formatCurrency.js'
 import formatDate from '../../utils/formatters/formatDate.js'
 
 export default function CareerMilestoneModal({ milestones, employees, grades, onSave, onClose, onDirtyChange }) {
-  const [initial] = useState(() => ({ employeeId: '', milestoneType: 'PROMOTION', effectiveDate: todayInNairobi(), previousGradeId: '', newGradeId: '', description: '' }))
-  const [values, setValues] = useState(initial)
-  const [errors, setErrors] = useState({})
+  const [initial] = useState(() => ({
+    employeeId: '', milestoneType: 'PROMOTION', effectiveDate: todayInNairobi(),
+    previousGradeId: '', newGradeId: '', description: '',
+    expectedEmployeeGrade: null, expectedEmployeeSalary: null, expectedNewSalary: null,
+  }))
+  const { register, control, handleSubmit, setValue, setError, setFocus, clearErrors,
+    formState: { errors, isDirty, isSubmitting: saving },
+  } = useForm({
+    defaultValues: initial,
+    resolver: zodResolver(careerMilestoneFormSchema, undefined, { raw: true }),
+  })
+  const values = useWatch({ control })
   const [saveError, setSaveError] = useState('')
-  const [saving, setSaving] = useState(false)
   const [confirmDiscard, setConfirmDiscard] = useState(false)
-  const formRef = useRef(null)
   const savingRef = useRef(false)
-  const dirty = Object.keys(initial).some((key) => values[key] !== initial[key])
+  const dirty = isDirty
+
+  useEffect(() => { onDirtyChange(dirty) }, [dirty, onDirtyChange])
   const { employee, previousGrade, newGrade, historical, scheduled } = careerChangeContext(values, milestones, employees, grades)
   const needsGrade = values.milestoneType !== 'AWARD_MILESTONE'
   const submitLabel = scheduled ? 'Schedule Milestone' : historical ? 'Record Historical Milestone' : newGrade || needsGrade ? 'Confirm & Update Employee' : 'Record Milestone'
 
-  function change(name, value) {
-    let next = { ...values, [name]: value }
+  function updateSelection(event) {
+    const { name, value } = event.target
     if (name === 'employeeId') {
       const selected = employees.find((item) => item.id === value)
-      next = { ...next, previousGradeId: String(grades.find((grade) => grade.name === selected?.grade)?.id ?? ''), newGradeId: '',
-        expectedEmployeeGrade: selected?.grade, expectedEmployeeSalary: selected?.basicSalary, expectedNewSalary: undefined }
-      setErrors({})
-    } else {
-      if (name === 'newGradeId') next.expectedNewSalary = grades.find((grade) => String(grade.id) === value)?.salary
-      setErrors((current) => ({ ...current, [name]: undefined }))
+      setValue('previousGradeId', String(grades.find((grade) => grade.name === selected?.grade)?.id ?? ''), { shouldDirty: true })
+      setValue('newGradeId', '', { shouldDirty: true })
+      setValue('expectedEmployeeGrade', selected?.grade ?? null)
+      setValue('expectedEmployeeSalary', selected?.basicSalary ?? null)
+      setValue('expectedNewSalary', null)
+      clearErrors()
+    } else if (name === 'newGradeId') {
+      setValue('expectedNewSalary', grades.find((grade) => String(grade.id) === value)?.salary ?? null)
     }
-    setValues(next)
-    setSaveError('')
-    onDirtyChange(Object.keys(initial).some((key) => next[key] !== initial[key]))
   }
 
   function close() {
-    if (savingRef.current) return
+    if (saving || savingRef.current) return
     if (dirty) setConfirmDiscard(true)
     else onClose()
   }
 
-  async function submit(event) {
-    event.preventDefault()
+  async function submit(values) {
     if (savingRef.current) return
-    const nextErrors = validateCareerMilestone(values, milestones, employees, grades)
-    setErrors(nextErrors)
-    if (Object.keys(nextErrors).length) {
-      formRef.current.elements.namedItem(Object.keys(nextErrors)[0])?.focus()
-      return
-    }
-    savingRef.current = true
-    setSaving(true)
     setSaveError('')
-    try { await onSave(values); onClose() }
-    catch (error) { setSaveError(error.message || 'The milestone could not be saved. Please try again.') }
-    finally { savingRef.current = false; setSaving(false) }
+    if (showFormErrors(validateCareerMilestoneRules(values, milestones, employees, grades), setError, setFocus)) return
+    savingRef.current = true
+    try {
+      await onSave(values)
+      onClose()
+    } catch (error) {
+      setSaveError(error.message || 'The milestone could not be saved. Please try again.')
+    } finally {
+      savingRef.current = false
+    }
   }
 
   function fieldProps(name) {
-    return { name, value: values[name], onChange: (event) => change(name, event.target.value),
+    return { ...register(name, { onChange: (event) => {
+        clearErrors(name)
+        setSaveError('')
+        updateSelection(event)
+      } }), disabled: saving,
       'aria-invalid': !!errors[name], 'aria-describedby': errors[name] ? `career-${name}-error` : undefined }
   }
   function fieldError(name) {
-    return errors[name] && <small className="field-error" id={`career-${name}-error`}>{errors[name]}</small>
+    return errors[name] && <small className="field-error" id={`career-${name}-error`}>{errors[name].message}</small>
   }
 
   if (confirmDiscard) return <ConfirmationModal title="Discard career milestone?" confirmLabel="Discard changes"
@@ -75,7 +89,7 @@ export default function CareerMilestoneModal({ milestones, employees, grades, on
 
   return (
     <Modal className="career-modal" onClose={close} title={<><Icon name="star" size={25} /> Record Promotion or Career Milestone</>}>
-      <form ref={formRef} onSubmit={submit} noValidate aria-busy={saving}>
+      <form onSubmit={(event) => handleSubmit(submit)(event)} noValidate aria-busy={saving}>
         <fieldset className="career-fields form-grid" disabled={saving}>
           <legend className="sr-only">Career milestone details</legend>
           <label className="full-width">Employee <span>*</span>

@@ -1,8 +1,11 @@
-import { useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useForm, useWatch } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import Modal from '../common/Modal.jsx'
 import ConfirmationModal from '../common/ConfirmationModal.jsx'
 import Icon from '../common/Icon.jsx'
-import { validateDepartment } from '../../utils/validation/validators.js'
+import { validateDepartmentRules } from '../../utils/validation/validators.js'
+import { departmentSchema } from '../../utils/validation/workforceSchemas.js'
 
 export default function DepartmentModal({
   department,
@@ -12,48 +15,49 @@ export default function DepartmentModal({
   onClose,
   onDirtyChange,
 }) {
-  const [values, setValues] = useState({
-    name: '',
-    code: '',
-    description: '',
-    headId: '',
-    status: 'Active',
-    ...department,
+  const {
+    register, control, handleSubmit, setValue, setError, setFocus, clearErrors,
+    formState: { errors, isDirty, isSubmitting },
+  } = useForm({
+    defaultValues: {
+      name: '', code: '', description: '', headId: '', status: 'Active', ...department,
+    },
+    // Keep the department ID and head assignment for the existing save service.
+    resolver: zodResolver(departmentSchema, undefined, { raw: true }),
   })
-  const [errors, setErrors] = useState({})
-  const [formError, setFormError] = useState('')
-  const [dirty, setDirty] = useState(false)
+  const status = useWatch({ control, name: 'status' })
   const [confirmDiscard, setConfirmDiscard] = useState(false)
-  const formRef = useRef(null)
   const staff = employees.filter(
     (employee) => employee.department === department?.name,
   )
 
-  function changeField(name, value) {
-    setValues((current) => ({ ...current, [name]: value }))
-    setErrors((current) => ({ ...current, [name]: undefined }))
-    setFormError('')
-    setDirty(true)
-    onDirtyChange(true)
+  useEffect(() => {
+    onDirtyChange(isDirty)
+  }, [isDirty, onDirtyChange])
+
+  function changeCode(event) {
+    setValue('code', event.target.value.toUpperCase(), { shouldDirty: true })
+    clearErrors('code')
   }
+
   function close() {
-    if (dirty) setConfirmDiscard(true)
+    if (isSubmitting) return
+    if (isDirty) setConfirmDiscard(true)
     else onClose()
   }
-  function submit(event) {
-    event.preventDefault()
-    const nextErrors = validateDepartment(values, departments, employees)
-    setErrors(nextErrors)
+  async function submit(values) {
+    const nextErrors = validateDepartmentRules(values, departments, employees)
     if (Object.keys(nextErrors).length) {
-      formRef.current
-        .querySelector(`[name="${Object.keys(nextErrors)[0]}"]`)
-        ?.focus()
+      for (const [name, message] of Object.entries(nextErrors)) {
+        setError(name, { type: 'business', message })
+      }
+      setFocus(Object.keys(nextErrors)[0])
       return
     }
     try {
-      onSave(values)
+      await onSave(values)
     } catch (error) {
-      setFormError(error.message || 'The department could not be saved.')
+      setError('root', { type: 'server', message: error.message || 'The department could not be saved.' })
     }
   }
 
@@ -79,20 +83,19 @@ export default function DepartmentModal({
     >
       <form
         className="department-form"
-        onSubmit={submit}
-        ref={formRef}
+        onSubmit={handleSubmit(submit)}
         noValidate
+        aria-busy={isSubmitting}
       >
         <div className="employee-fields-grid department-fields-grid">
           <label className="full-width">
             Department name <span>*</span>
             <input
-              name="name"
-              value={values.name}
-              onChange={(event) => changeField('name', event.target.value)}
+              {...register('name')}
               placeholder="e.g. Network & Infrastructure"
               maxLength={120}
               required
+              disabled={isSubmitting}
               aria-invalid={!!errors.name}
               aria-describedby={
                 errors.name ? 'department-name-error' : undefined
@@ -100,21 +103,18 @@ export default function DepartmentModal({
             />
             {errors.name && (
               <small className="field-error" id="department-name-error">
-                {errors.name}
+                {errors.name.message}
               </small>
             )}
           </label>
           <label>
             Department code <span>*</span>
             <input
-              name="code"
-              value={values.code}
-              onChange={(event) =>
-                changeField('code', event.target.value.toUpperCase())
-              }
+              {...register('code', { onChange: changeCode })}
               placeholder="e.g. NET"
               maxLength={12}
               required
+              disabled={isSubmitting}
               aria-invalid={!!errors.code}
               aria-describedby={
                 errors.code ? 'department-code-error' : undefined
@@ -122,32 +122,30 @@ export default function DepartmentModal({
             />
             {errors.code && (
               <small className="field-error" id="department-code-error">
-                {errors.code}
+                {errors.code.message}
               </small>
             )}
           </label>
           <label>
             Status <span>*</span>
             <select
-              name="status"
-              value={values.status}
-              onChange={(event) => changeField('status', event.target.value)}
+              {...register('status')}
               required
+              disabled={isSubmitting}
               aria-invalid={!!errors.status}
             >
               <option>Active</option>
               <option>Inactive</option>
             </select>
             {errors.status && (
-              <small className="field-error">{errors.status}</small>
+              <small className="field-error">{errors.status.message}</small>
             )}
           </label>
           <label className="full-width">
             Department head
             <select
-              name="headId"
-              value={values.headId}
-              onChange={(event) => changeField('headId', event.target.value)}
+              {...register('headId')}
+              disabled={isSubmitting}
               aria-invalid={!!errors.headId}
               aria-describedby="department-head-hint"
             >
@@ -164,37 +162,34 @@ export default function DepartmentModal({
                 : 'Assign employees to this department before choosing a head.'}
             </small>
             {errors.headId && (
-              <small className="field-error">{errors.headId}</small>
+              <small className="field-error">{errors.headId.message}</small>
             )}
           </label>
           <label className="full-width">
             Description
             <textarea
-              name="description"
-              value={values.description}
-              onChange={(event) =>
-                changeField('description', event.target.value)
-              }
+              {...register('description')}
               placeholder="Describe this department’s responsibilities"
               maxLength={300}
               rows={3}
+              disabled={isSubmitting}
               aria-invalid={!!errors.description}
             />
             {errors.description && (
-              <small className="field-error">{errors.description}</small>
+              <small className="field-error">{errors.description.message}</small>
             )}
           </label>
         </div>
-        {values.status === 'Inactive' && (
+        {status === 'Inactive' && (
           <p className="department-form-note">
             <Icon name="info" size={17} />
             Existing staff stay assigned. New employees cannot be placed in an
             inactive department.
           </p>
         )}
-        {formError && (
+        {errors.root && (
           <p className="form-error" role="alert">
-            {formError}
+            {errors.root.message}
           </p>
         )}
         <div className="modal-actions">
@@ -202,12 +197,13 @@ export default function DepartmentModal({
             type="button"
             className="button button-secondary"
             onClick={close}
+            disabled={isSubmitting}
           >
             Cancel
           </button>
-          <button type="submit" className="button button-primary">
+          <button type="submit" className="button button-primary" disabled={isSubmitting}>
             <Icon name={department ? 'check' : 'plus'} size={17} />
-            {department ? 'Save Changes' : 'Add Department'}
+            {isSubmitting ? 'Saving…' : department ? 'Save Changes' : 'Add Department'}
           </button>
         </div>
       </form>

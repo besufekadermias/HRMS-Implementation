@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useAdminStore } from './store/index.js'
 import AdminLayout from './layouts/main/AdminLayout.jsx'
 import Login from './pages/Auth/Login.jsx'
 import { signIn } from './services/auth/authService.js'
@@ -29,27 +30,20 @@ import DashboardActionDialog from './components/dashboard/DashboardActionDialog.
 import ConfirmationModal from './components/common/ConfirmationModal.jsx'
 import Icon from './components/common/Icon.jsx'
 import {
-  INITIAL_EMPLOYEES,
-  INITIAL_DEPARTMENTS,
-  JOB_GRADES,
-  INITIAL_ATTENDANCE,
-  INITIAL_ATTENDANCE_HEADS,
   ATTENDANCE_PAGES,
-  INITIAL_ATTENDANCE_SETTINGS,
   PAYROLL_PAGES,
   RECRUITMENT_PAGES,
 } from './utils/constants/constants.js'
 import { summarizeLeave } from './services/operations/leaveService.js'
 import useLeave from './hooks/operations/useLeave.js'
 import usePayroll from './hooks/operations/usePayroll.js'
-import { INITIAL_RECRUITMENT, saveJob, toggleJobStatus, decideApplication } from './services/recruitment/recruitmentService.js'
+import { saveJob, toggleJobStatus, decideApplication } from './services/recruitment/recruitmentService.js'
 import useCareer from './hooks/growth/useCareer.js'
-import { INITIAL_REWARDS, grantReward, deleteReward } from './services/growth/rewardService.js'
-import { INITIAL_ANNOUNCEMENTS, postAnnouncement, deleteAnnouncement } from './services/communications/announcementService.js'
-import { INITIAL_REPORTS } from './services/communications/reportService.js'
-import { INITIAL_DOCUMENTS, publishDocument, deleteDocument } from './services/communications/documentService.js'
-import { INITIAL_SERVICES, saveService, deleteService } from './services/communications/publicServiceService.js'
-import { INITIAL_DISCIPLINE, recordDisciplinaryAction, deleteDisciplinaryAction, remapDisciplineEmployee, removeEmployeeDiscipline } from './services/growth/disciplineService.js'
+import { grantReward, deleteReward } from './services/growth/rewardService.js'
+import { postAnnouncement, deleteAnnouncement } from './services/communications/announcementService.js'
+import { publishDocument, deleteDocument } from './services/communications/documentService.js'
+import { saveService, deleteService } from './services/communications/publicServiceService.js'
+import { recordDisciplinaryAction, deleteDisciplinaryAction, remapDisciplineEmployee, removeEmployeeDiscipline } from './services/growth/disciplineService.js'
 import { todayInNairobi } from './utils/validation/validators.js'
 import {
   saveDepartment,
@@ -125,25 +119,20 @@ function routeHash(route) {
 }
 
 export default function App() {
-  const [employees, setEmployees] = useState(INITIAL_EMPLOYEES)
-  const [departments, setDepartments] = useState(INITIAL_DEPARTMENTS)
-  const [grades, setGrades] = useState(JOB_GRADES)
-  const [rewards, setRewards] = useState(INITIAL_REWARDS)
-  const [recruitment, setRecruitment] = useState(INITIAL_RECRUITMENT)
-  const [discipline, setDiscipline] = useState(INITIAL_DISCIPLINE)
-  const [attendanceSettings, setAttendanceSettings] = useState(INITIAL_ATTENDANCE_SETTINGS)
-  const [departmentChanges, setDepartmentChanges] = useState([])
+  const {
+    employees, setEmployees, departments, setDepartments, grades, setGrades, setWorkforce,
+    rewards, setRewards, recruitment, setRecruitment, discipline, setDiscipline,
+    attendanceSettings, setAttendanceSettings, departmentChanges, setDepartmentChanges,
+    announcements, setAnnouncements, documents, setDocuments, services, setServices,
+    reports, attendance, attendanceHeads, toast, setToast,
+    workspaceClosed, setWorkspaceClosed, reset: resetAdmin,
+  } = useAdminStore()
   const [route, setRoute] = useState(readRoute)
   const [search, setSearch] = useState('')
   const [action, setAction] = useState(null)
-  const [announcements, setAnnouncements] = useState(INITIAL_ANNOUNCEMENTS)
-  const [documents, setDocuments] = useState(INITIAL_DOCUMENTS)
-  const [services, setServices] = useState(INITIAL_SERVICES)
-  const [toast, setToast] = useState('')
-  const [workspaceClosed, setWorkspaceClosed] = useState(true)
   const leave = useLeave(employees, { enabled: !workspaceClosed })
   const payroll = usePayroll(employees, { enabled: !workspaceClosed })
-  const career = useCareer(employees, grades, setEmployees, !workspaceClosed)
+  const career = useCareer(employees, grades, !workspaceClosed)
   const operationSaving = leave.saving || payroll.saving
   const [dirty, setDirty] = useState(false)
   const [pendingRoute, setPendingRoute] = useState(null)
@@ -177,7 +166,7 @@ export default function App() {
       window.removeEventListener('hashchange', syncRoute)
       window.removeEventListener('popstate', syncRoute)
     }
-  }, [dirty, route, operationSaving])
+  }, [dirty, route, operationSaving, setToast])
 
   useEffect(() => {
     if (!dirty && !operationSaving) return undefined
@@ -193,7 +182,7 @@ export default function App() {
     if (!toast) return undefined
     const timer = window.setTimeout(() => setToast(''), 5500)
     return () => window.clearTimeout(timer)
-  }, [toast])
+  }, [toast, setToast])
 
   function go(next) {
     if (leave.isSaving() || payroll.isSaving()) return
@@ -259,7 +248,10 @@ export default function App() {
     const next = originalId
       ? employees.map((item) => (item.id === originalId ? employee : item))
       : [employee, ...employees]
-    setEmployees(next)
+    setWorkforce({
+      employees: next,
+      departments: reconcileDepartmentHeads(departments, next, originalId, employee.id),
+    })
     if (originalId && originalId !== employee.id) {
       leave.remapEmployeeId(originalId, employee.id)
       setRewards((current) => current.map((reward) => reward.employeeId === originalId
@@ -267,9 +259,6 @@ export default function App() {
       setDiscipline((current) => remapDisciplineEmployee(current, originalId, employee.id))
       career.remapEmployeeId(originalId, employee.id)
     }
-    setDepartments(
-      reconcileDepartmentHeads(departments, next, originalId, employee.id),
-    )
     if (!original)
       recordDepartmentChange(
         'Employee assigned',
@@ -294,12 +283,11 @@ export default function App() {
   function removeEmployee(id) {
     const removed = employees.find((employee) => employee.id === id)
     const next = employees.filter((employee) => employee.id !== id)
-    setEmployees(next)
+    setWorkforce({ employees: next, departments: reconcileDepartmentHeads(departments, next) })
     // Match the rewards table's employee foreign key (ON DELETE CASCADE).
     setRewards((current) => current.filter((reward) => reward.employeeId !== id))
     setDiscipline((current) => removeEmployeeDiscipline(current, id))
     career.removeEmployee(id)
-    setDepartments(reconcileDepartmentHeads(departments, next))
     if (removed)
       recordDepartmentChange(
         'Employee removed',
@@ -344,8 +332,7 @@ export default function App() {
 
   function handleSaveDepartment(values) {
     const result = saveDepartment(departments, employees, values)
-    setDepartments(result.departments)
-    setEmployees(result.employees)
+    setWorkforce(result)
     recordDepartmentChange(
       values.id ? 'Department updated' : 'New department created',
       result.department.name,
@@ -368,8 +355,7 @@ export default function App() {
 
   function handleSaveJobGrade(values) {
     const result = saveJobGrade(grades, employees, values)
-    setGrades(result.grades)
-    setEmployees(result.employees)
+    setWorkforce(result)
     setToast(
       'Job grade and assigned employee salaries updated.',
     )
@@ -498,23 +484,11 @@ export default function App() {
     leave.reset()
     payroll.reset()
     career.reset()
-    setAttendanceSettings(INITIAL_ATTENDANCE_SETTINGS)
-    setEmployees(INITIAL_EMPLOYEES)
-    setDepartments(INITIAL_DEPARTMENTS)
-    setGrades(JOB_GRADES)
-    setRewards(INITIAL_REWARDS)
-    setRecruitment(INITIAL_RECRUITMENT)
-    setDiscipline(INITIAL_DISCIPLINE)
-    setDepartmentChanges([])
-    setAnnouncements(INITIAL_ANNOUNCEMENTS)
-    setDocuments(INITIAL_DOCUMENTS)
-    setServices(INITIAL_SERVICES)
+    resetAdmin()
     setSearch('')
-    setToast('')
     setDirty(false)
     setPendingRoute(null)
     setAction(null)
-    setWorkspaceClosed(true)
     setRoute({ page: 'dashboard' })
     window.history.replaceState(null, '', '#/login')
   }
@@ -540,7 +514,7 @@ export default function App() {
       />
     )
   else if (route.page === 'reports')
-    content = <Reports reports={INITIAL_REPORTS} search={search} onSearch={setSearch} />
+    content = <Reports reports={reports} search={search} onSearch={setSearch} />
   else if (route.page === 'documents')
     content = <Documents documents={documents} search={search} onSearch={setSearch}
       onSave={handlePublishDocument} onDelete={handleDeleteDocument} onDirtyChange={setDirty} />
@@ -598,8 +572,8 @@ export default function App() {
       <AttendanceOverview
         employees={employees}
         departments={departments}
-        records={INITIAL_ATTENDANCE}
-        fallbackHeads={INITIAL_ATTENDANCE_HEADS}
+        records={attendance}
+        fallbackHeads={attendanceHeads}
         search={search}
         onSearch={setSearch}
       />
@@ -607,13 +581,13 @@ export default function App() {
   else if (route.page === 'check-in-logs')
     content = (
       <CheckInLogs employees={employees} departments={departments}
-        records={INITIAL_ATTENDANCE} fallbackHeads={INITIAL_ATTENDANCE_HEADS}
+        records={attendance} fallbackHeads={attendanceHeads}
         search={search} onSearch={setSearch} />
     )
   else if (route.page === 'late-arrivals')
     content = (
       <LateArrivals employees={employees} departments={departments}
-        records={INITIAL_ATTENDANCE} fallbackHeads={INITIAL_ATTENDANCE_HEADS}
+        records={attendance} fallbackHeads={attendanceHeads}
         search={search} onSearch={setSearch} />
     )
   else if (route.page === 'attendance-settings')

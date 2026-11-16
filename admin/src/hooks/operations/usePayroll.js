@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useAdminStore } from '../../store/index.js'
 import payrollApi from '../../services/operations/payrollApi.js'
 import { validatePayrollResponse } from '../../services/operations/payrollValidation.js'
 
@@ -6,7 +7,8 @@ export default function usePayroll(
   employees,
   { enabled = true, api = payrollApi } = {},
 ) {
-  const [data, setData] = useState(null)
+  const data = useAdminStore(state => state.payrollData)
+  const setData = useAdminStore(state => state.setPayrollData)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
@@ -33,7 +35,7 @@ export default function usePayroll(
     return () => {
       cancelled = true
     }
-  }, [api, enabled, version])
+  }, [api, enabled, version, setData])
 
   async function save(method, input) {
     if (savingRef.current)

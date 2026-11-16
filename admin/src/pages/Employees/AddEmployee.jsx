@@ -1,4 +1,6 @@
-import { useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useForm, useWatch } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import Icon from '../../components/common/Icon.jsx'
 import PersonalInfoForm from '../../components/employees/PersonalInfoForm.jsx'
 import JobDetailsForm from '../../components/employees/JobDetailsForm.jsx'
@@ -7,7 +9,8 @@ import {
   PORTAL_ROLES,
   INITIAL_DEPARTMENTS,
 } from '../../utils/constants/constants.js'
-import { validateEmployee } from '../../utils/validation/validators.js'
+import { validateEmployeeRules } from '../../utils/validation/validators.js'
+import { getEmployeeSchema } from '../../utils/validation/workforceSchemas.js'
 
 export default function AddEmployee({
   employee,
@@ -18,28 +21,39 @@ export default function AddEmployee({
   onCancel,
   onDirtyChange,
 }) {
-  const [values, setValues] = useState({
-    id: '',
-    name: '',
-    email: '',
-    gender: '',
-    birthDate: '',
-    qualification: '',
-    department: '',
-    grade: '',
-    employmentType: 'Permanent',
-    hiredDate: '',
-    portalRole: 'Employee',
-    photo: null,
-    educationDocument: null,
-    status: 'Active',
-    ...employee,
-    temporaryPassword: '',
+  const {
+    register, control, handleSubmit, setValue, setError, setFocus,
+    formState: { errors, isDirty, isSubmitting },
+  } = useForm({
+    defaultValues: {
+      id: '',
+      name: '',
+      email: '',
+      gender: '',
+      birthDate: '',
+      qualification: '',
+      department: '',
+      grade: '',
+      employmentType: 'Permanent',
+      hiredDate: '',
+      portalRole: 'Employee',
+      photo: null,
+      educationDocument: null,
+      status: 'Active',
+      ...employee,
+      temporaryPassword: '',
+    },
+    // Keep upload objects and optional fields intact; normalize on save below.
+    resolver: zodResolver(getEmployeeSchema({ originalId: employee?.id }), undefined, { raw: true }),
+    shouldFocusError: false,
   })
-  const [errors, setErrors] = useState({})
+  const [grade, photo, educationDocument] = useWatch({
+    control, name: ['grade', 'photo', 'educationDocument'],
+  })
   const [showPassword, setShowPassword] = useState(false)
   const [photoBusy, setPhotoBusy] = useState(false)
-  const formRef = useRef(null)
+  // File contents cannot be compared by React Hook Form's dirty tracking.
+  const [uploadsDirty, setUploadsDirty] = useState(false)
   const editing = Boolean(employee)
   const departmentOptions = departments
     .filter(
@@ -49,23 +63,26 @@ export default function AddEmployee({
     )
     .map((department) => department.name)
 
-  function changeField(name, value) {
-    setValues((current) => ({ ...current, [name]: value }))
-    setErrors((current) => ({ ...current, [name]: undefined }))
-    onDirtyChange(true)
+  useEffect(() => {
+    onDirtyChange(isDirty || uploadsDirty)
+  }, [isDirty, uploadsDirty, onDirtyChange])
+
+  function changeUpload(name, value) {
+    setValue(name, value, { shouldDirty: true })
+    setUploadsDirty(true)
   }
 
-  function submit(event) {
-    event.preventDefault()
-    const nextErrors = validateEmployee(values, employees, employee?.id, {
+  async function submit(values) {
+    if (photoBusy) return
+    const nextErrors = validateEmployeeRules(values, employees, employee?.id, {
       departments: departmentOptions,
       grades,
     })
-    setErrors(nextErrors)
     if (Object.keys(nextErrors).length) {
-      formRef.current
-        .querySelector(`[name="${Object.keys(nextErrors)[0]}"]`)
-        ?.focus()
+      for (const [name, message] of Object.entries(nextErrors)) {
+        setError(name, { type: 'business', message })
+      }
+      setFocus(Object.keys(nextErrors)[0])
       return
     }
     // Keep the temporary password transient; no credentials are saved or exported.
@@ -87,7 +104,11 @@ export default function AddEmployee({
       basicSalary:
         grades.find((grade) => grade.name === values.grade)?.salary || 0,
     }
-    onSave(record, employee?.id)
+    try {
+      await onSave(record, employee?.id)
+    } catch (error) {
+      setError('root', { type: 'server', message: error.message || 'Employee could not be saved. Please try again.' })
+    }
   }
 
   return (
@@ -111,22 +132,25 @@ export default function AddEmployee({
       </div>
       <form
         className="card employee-registration-form"
-        onSubmit={submit}
-        ref={formRef}
+        onSubmit={handleSubmit(submit, errors => setFocus(Object.keys(errors)[0]))}
         noValidate
+        aria-busy={isSubmitting}
       >
         <PersonalInfoForm
-          values={values}
+          register={register}
+          photo={photo}
           errors={errors}
-          onChange={changeField}
+          onChangeUpload={changeUpload}
           onPhotoBusy={setPhotoBusy}
         />
         <JobDetailsForm
           departments={departmentOptions}
           grades={grades}
-          values={values}
+          register={register}
+          grade={grade}
+          educationDocument={educationDocument}
           errors={errors}
-          onChange={changeField}
+          onChangeUpload={changeUpload}
           editing={editing}
         />
         <fieldset className="employee-form-section portal-account-section">
@@ -146,9 +170,7 @@ export default function AddEmployee({
             <label>
               Official email / Portal login ID <span>*</span>
               <input
-                name="email"
-                value={values.email}
-                onChange={(event) => changeField('email', event.target.value)}
+                {...register('email')}
                 placeholder="e.g. yohannes@hadiya.gov.et"
                 maxLength={120}
                 autoComplete="off"
@@ -156,25 +178,22 @@ export default function AddEmployee({
                 aria-invalid={!!errors.email}
               />
               {errors.email && (
-                <small className="field-error">{errors.email}</small>
+                <small className="field-error">{errors.email.message}</small>
               )}
             </label>
             <label>
               Portal role <span>*</span>
               <select
-                name="portalRole"
-                value={values.portalRole}
-                onChange={(event) =>
-                  changeField('portalRole', event.target.value)
-                }
+                {...register('portalRole')}
                 required
+                aria-invalid={!!errors.portalRole}
               >
                 {PORTAL_ROLES.map((role) => (
                   <option key={role}>{role}</option>
                 ))}
               </select>
               {errors.portalRole && (
-                <small className="field-error">{errors.portalRole}</small>
+                <small className="field-error">{errors.portalRole.message}</small>
               )}
             </label>
             {!editing ? (
@@ -182,12 +201,8 @@ export default function AddEmployee({
                 Temporary initial password <span>*</span>
                 <span className="password-field">
                   <input
-                    name="temporaryPassword"
+                    {...register('temporaryPassword')}
                     type={showPassword ? 'text' : 'password'}
-                    value={values.temporaryPassword}
-                    onChange={(event) =>
-                      changeField('temporaryPassword', event.target.value)
-                    }
                     autoComplete="new-password"
                     placeholder="At least 8 characters"
                     required
@@ -207,13 +222,14 @@ export default function AddEmployee({
                 </span>
                 {errors.temporaryPassword && (
                   <small className="field-error">
-                    {errors.temporaryPassword}
+                    {errors.temporaryPassword.message}
                   </small>
                 )}
               </label>
             ) : null}
           </div>
         </fieldset>
+        {errors.root && <p className="form-error" role="alert">{errors.root.message}</p>}
         <div className="registration-footer">
           <p>
             <Icon name="info" size={16} />
@@ -230,14 +246,16 @@ export default function AddEmployee({
             <button
               type="submit"
               className="button button-primary"
-              disabled={photoBusy}
+              disabled={photoBusy || isSubmitting}
             >
               <Icon name={editing ? 'check' : 'users'} size={18} />
               {photoBusy
                 ? 'Reading photo…'
-                : editing
-                  ? 'Save Changes'
-                  : 'Register Employee'}
+                : isSubmitting
+                  ? 'Saving…'
+                  : editing
+                    ? 'Save Changes'
+                    : 'Register Employee'}
             </button>
           </div>
         </div>

@@ -1,10 +1,14 @@
+import { loginSchema } from '../../utils/validation/authSchema.js';
+import { validateInput } from '../../utils/validation/schemaHelpers.js';
 // Demo credentials only. Real authentication will be added by the backend team.
 export const DEMO_LOGIN = {
   email: "admin@hadiya.gov.et",
   password: "HRMS-demo-2026",
 };
 
-export function signIn({ email, password }) {
+export function signIn(values) {
+  validateInput(loginSchema, values);
+  const { email, password } = values;
   const correctEmail = email.trim().toLowerCase() === DEMO_LOGIN.email;
   const correctPassword = password === DEMO_LOGIN.password;
 

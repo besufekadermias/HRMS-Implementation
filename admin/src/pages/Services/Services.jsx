@@ -22,7 +22,7 @@ export default function Services({ services, search, onSearch, onSave, onDelete,
 
   function clearFilters() { onSearch(''); setType(''); setStatus('') }
   function closeForm() { setEditing(null); onDirtyChange(false) }
-  function save(values) { onSave(values); clearFilters(); setExportMessage('') }
+  async function save(values) { await onSave(values); clearFilters(); setExportMessage('') }
 
   function confirmDelete() {
     try {

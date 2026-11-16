@@ -3,9 +3,10 @@ import Icon from '../common/Icon.jsx'
 import { todayInNairobi } from '../../utils/validation/validators.js'
 
 export default function PersonalInfoForm({
-  values,
+  register,
+  photo,
   errors,
-  onChange,
+  onChangeUpload,
   onPhotoBusy,
 }) {
   const readerRef = useRef(null)
@@ -28,7 +29,7 @@ export default function PersonalInfoForm({
     const reader = new FileReader()
     readerRef.current = reader
     reader.onload = () => {
-      onChange('photo', { name: file.name, dataUrl: reader.result })
+      onChangeUpload('photo', { name: file.name, dataUrl: reader.result })
       onPhotoBusy(false)
     }
     reader.onerror = () => {
@@ -52,9 +53,7 @@ export default function PersonalInfoForm({
         <label>
           Employee ID No <span>*</span>
           <input
-            name="id"
-            value={values.id}
-            onChange={(event) => onChange('id', event.target.value)}
+            {...register('id')}
             placeholder="e.g. HD-IT-002"
             maxLength={30}
             required
@@ -63,16 +62,14 @@ export default function PersonalInfoForm({
           />
           {errors.id && (
             <small className="field-error" id="id-error">
-              {errors.id}
+              {errors.id.message}
             </small>
           )}
         </label>
         <label className="span-two">
           Full name (first, father, grandfather) <span>*</span>
           <input
-            name="name"
-            value={values.name}
-            onChange={(event) => onChange('name', event.target.value)}
+            {...register('name')}
             placeholder="e.g. Yohannes Solomon Haile"
             maxLength={100}
             required
@@ -81,7 +78,7 @@ export default function PersonalInfoForm({
           />
           {errors.name && (
             <small className="field-error" id="name-error">
-              {errors.name}
+              {errors.name.message}
             </small>
           )}
         </label>
@@ -104,8 +101,8 @@ export default function PersonalInfoForm({
                 event.target.value = ''
               }}
             />
-            {values.photo ? (
-              <img src={values.photo.dataUrl} alt="Employee photo preview" />
+            {photo ? (
+              <img src={photo.dataUrl} alt="Employee photo preview" />
             ) : (
               <span className="icon-circle tone-green">
                 <Icon name="image" size={23} />
@@ -113,16 +110,16 @@ export default function PersonalInfoForm({
             )}
             <span>
               <strong>
-                {values.photo?.name || 'Click to upload an employee photo'}
+                {photo?.name || 'Click to upload an employee photo'}
               </strong>
               <small>JPG, PNG, WEBP · Up to 5 MB</small>
             </span>
           </label>
-          {values.photo && (
+          {photo && (
             <button
               type="button"
               className="text-button"
-              onClick={() => onChange('photo', null)}
+              onClick={() => onChangeUpload('photo', null)}
             >
               Remove photo
             </button>
@@ -136,9 +133,7 @@ export default function PersonalInfoForm({
         <label>
           Gender <span>*</span>
           <select
-            name="gender"
-            value={values.gender}
-            onChange={(event) => onChange('gender', event.target.value)}
+            {...register('gender')}
             required
             aria-invalid={!!errors.gender}
           >
@@ -148,31 +143,27 @@ export default function PersonalInfoForm({
             ))}
           </select>
           {errors.gender && (
-            <small className="field-error">{errors.gender}</small>
+            <small className="field-error">{errors.gender.message}</small>
           )}
         </label>
         <label>
           Birth date <span>*</span>
           <input
-            name="birthDate"
+            {...register('birthDate')}
             type="date"
-            value={values.birthDate}
-            onChange={(event) => onChange('birthDate', event.target.value)}
             min="1900-01-01"
             max={todayInNairobi()}
             required
             aria-invalid={!!errors.birthDate}
           />
           {errors.birthDate && (
-            <small className="field-error">{errors.birthDate}</small>
+            <small className="field-error">{errors.birthDate.message}</small>
           )}
         </label>
         <label className="span-two">
           Highest qualification
           <input
-            name="qualification"
-            value={values.qualification}
-            onChange={(event) => onChange('qualification', event.target.value)}
+            {...register('qualification')}
             placeholder="e.g. BSc in Information Technology"
             maxLength={160}
           />

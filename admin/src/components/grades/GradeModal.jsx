@@ -1,8 +1,11 @@
-import { useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import Modal from '../common/Modal.jsx'
 import ConfirmationModal from '../common/ConfirmationModal.jsx'
 import Icon from '../common/Icon.jsx'
-import { validateJobGrade } from '../../utils/validation/validators.js'
+import { validateJobGradeRules } from '../../utils/validation/validators.js'
+import { jobGradeSchema } from '../../utils/validation/workforceSchemas.js'
 import formatCurrency from '../../utils/formatters/formatCurrency.js'
 
 export default function GradeModal({
@@ -13,41 +16,41 @@ export default function GradeModal({
   onClose,
   onDirtyChange,
 }) {
-  const [values, setValues] = useState({ name: '', salary: '', ...grade })
-  const [errors, setErrors] = useState({})
-  const [saveError, setSaveError] = useState('')
-  const [dirty, setDirty] = useState(false)
+  const {
+    register, handleSubmit, setError, setFocus,
+    formState: { errors, isDirty, isSubmitting },
+  } = useForm({
+    defaultValues: { name: '', ...grade, salary: String(grade?.salary ?? '') },
+    // Preserve the grade ID; the save service normalizes the title and salary.
+    resolver: zodResolver(jobGradeSchema, undefined, { raw: true }),
+  })
   const [confirmDiscard, setConfirmDiscard] = useState(false)
-  const formRef = useRef(null)
   const staffCount = employees.filter(
     (employee) => employee.grade === grade?.name,
   ).length
 
-  function changeField(name, value) {
-    setValues((current) => ({ ...current, [name]: value }))
-    setErrors((current) => ({ ...current, [name]: undefined }))
-    setSaveError('')
-    setDirty(true)
-    onDirtyChange(true)
-  }
+  useEffect(() => {
+    onDirtyChange(isDirty)
+  }, [isDirty, onDirtyChange])
+
   function close() {
-    if (dirty) setConfirmDiscard(true)
+    if (isSubmitting) return
+    if (isDirty) setConfirmDiscard(true)
     else onClose()
   }
-  function submit(event) {
-    event.preventDefault()
-    const nextErrors = validateJobGrade(values, grades)
-    setErrors(nextErrors)
+  async function submit(values) {
+    const nextErrors = validateJobGradeRules(values, grades)
     if (Object.keys(nextErrors).length) {
-      formRef.current
-        .querySelector(`[name="${Object.keys(nextErrors)[0]}"]`)
-        ?.focus()
+      for (const [name, message] of Object.entries(nextErrors)) {
+        setError(name, { type: 'business', message })
+      }
+      setFocus(Object.keys(nextErrors)[0])
       return
     }
     try {
-      onSave(values)
+      await onSave(values)
     } catch (error) {
-      setSaveError(error.message || 'The grade could not be saved.')
+      setError('root', { type: 'server', message: error.message || 'The grade could not be saved.' })
     }
   }
 
@@ -71,7 +74,7 @@ export default function GradeModal({
       subtitle="Set the grade title and its base salary in Ethiopian Birr"
       onClose={close}
     >
-      <form onSubmit={submit} ref={formRef} noValidate>
+      <form onSubmit={handleSubmit(submit)} noValidate aria-busy={isSubmitting}>
         {grade && (
           <p className="grade-form-id">
             Grade ID <strong>#{grade.id}</strong>
@@ -81,34 +84,32 @@ export default function GradeModal({
           <label>
             Grade title <span>*</span>
             <input
-              name="name"
-              value={values.name}
-              onChange={(event) => changeField('name', event.target.value)}
+              {...register('name')}
               placeholder="e.g. Grade V"
               maxLength={80}
               required
+              disabled={isSubmitting}
               aria-invalid={!!errors.name}
               aria-describedby={errors.name ? 'grade-name-error' : undefined}
             />
             {errors.name && (
               <small className="field-error" id="grade-name-error">
-                {errors.name}
+                {errors.name.message}
               </small>
             )}
           </label>
           <label>
             Base salary (ETB) <span>*</span>
             <input
-              name="salary"
+              {...register('salary')}
               type="number"
               inputMode="decimal"
               min="0.01"
               max="999999999.99"
               step="0.01"
-              value={values.salary}
-              onChange={(event) => changeField('salary', event.target.value)}
               placeholder="e.g. 24000.00"
               required
+              disabled={isSubmitting}
               aria-invalid={!!errors.salary}
               aria-describedby={
                 errors.salary ? 'grade-salary-error' : 'grade-salary-hint'
@@ -116,7 +117,7 @@ export default function GradeModal({
             />
             {errors.salary ? (
               <small className="field-error" id="grade-salary-error">
-                {errors.salary}
+                {errors.salary.message}
               </small>
             ) : (
               <small className="field-hint" id="grade-salary-hint">
@@ -140,9 +141,9 @@ export default function GradeModal({
             </p>
           </div>
         )}
-        {saveError && (
+        {errors.root && (
           <p className="form-error" role="alert">
-            {saveError}
+            {errors.root.message}
           </p>
         )}
         <div className="modal-actions">
@@ -150,12 +151,13 @@ export default function GradeModal({
             type="button"
             className="button button-secondary"
             onClick={close}
+            disabled={isSubmitting}
           >
             Cancel
           </button>
-          <button type="submit" className="button button-primary">
+          <button type="submit" className="button button-primary" disabled={isSubmitting}>
             <Icon name={grade ? 'check' : 'plus'} size={17} />
-            {grade ? 'Save Changes' : 'Add Job Grade'}
+            {isSubmitting ? 'Saving…' : grade ? 'Save Changes' : 'Add Job Grade'}
           </button>
         </div>
       </form>

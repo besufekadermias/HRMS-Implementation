@@ -1,4 +1,7 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useForm, useWatch } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { getDeductionFormSchema } from '../../utils/validation/operationsSchemas.js'
 import Modal from '../common/Modal.jsx'
 import ConfirmationModal from '../common/ConfirmationModal.jsx'
 import Icon from '../common/Icon.jsx'
@@ -12,72 +15,69 @@ export default function AddDeductionModal({
   onClose,
   onDirtyChange,
 }) {
-  // Form state holds editable fields; saved IDs and audit history stay outside it.
-  const [values, setValues] = useState(() => ({
-    name: deduction?.name ?? '',
-    description: deduction?.description ?? '',
-    kind: deduction?.kind ?? 'fixed',
-    value: deduction?.value ?? '',
-    appliesTo: deduction?.appliesTo ?? 'all',
-    employeeIds: [...(deduction?.employeeIds ?? [])],
-    active: deduction?.active ?? true,
-  }))
-  const [dirty, setDirty] = useState(false)
+  const { register, control, handleSubmit, setValue, clearErrors,
+    formState: { errors, isDirty: dirty, isSubmitting: saving },
+  } = useForm({
+    defaultValues: {
+      name: deduction?.name ?? '', description: deduction?.description ?? '',
+      kind: deduction?.kind ?? 'fixed', value: deduction?.value ?? '',
+      appliesTo: deduction?.appliesTo ?? 'all', employeeIds: [...(deduction?.employeeIds ?? [])],
+      active: deduction?.active ?? true,
+    },
+    resolver: zodResolver(getDeductionFormSchema(deduction?.type === 'incomeTax'), undefined, { raw: true }),
+    shouldFocusError: false,
+  })
+  const values = useWatch({ control })
   const [discard, setDiscard] = useState(false)
-  const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const submitting = useRef(false)
-  function change(key, value) {
-    setValues((current) => ({ ...current, [key]: value }))
-    setDirty(true)
-    onDirtyChange(true)
-    setError('')
+  const formRef = useRef(null)
+
+  useEffect(() => { onDirtyChange(dirty) }, [dirty, onDirtyChange])
+
+  function fieldProps(name) {
+    return { ...register(name, { onChange: () => { clearErrors(name); setError('') } }),
+      'aria-invalid': !!errors[name], 'aria-describedby': errors[name] ? `deduction-${name}-error` : undefined }
+  }
+  function fieldError(name) {
+    return errors[name] && <small className="field-error" id={`deduction-${name}-error`}>{errors[name].message}</small>
+  }
+  function invalid(nextErrors) {
+    formRef.current?.querySelector(`[name="${Object.keys(nextErrors)[0]}"]`)?.focus()
   }
   function close() {
-    if (submitting.current) return
+    if (saving || submitting.current) return
     if (dirty) setDiscard(true)
     else onClose()
   }
   function selectEmployee(employeeId, selected) {
-    const employeeIds = selected
+    setValue('employeeIds', selected
       ? [...values.employeeIds, employeeId]
-      : values.employeeIds.filter((id) => id !== employeeId)
-    change('employeeIds', employeeIds)
+      : values.employeeIds.filter((id) => id !== employeeId), { shouldDirty: true })
+    clearErrors('employeeIds')
+    setError('')
   }
-  function changeCalculation(kind) {
-    change('kind', kind)
+  function changeCalculation(event) {
+    const kind = event.target.value
     if (kind === 'automatic' || values.kind === 'automatic') {
-      setValues((current) => ({
-        ...current,
-        value: kind === 'automatic' ? null : '',
-      }))
+      setValue('value', kind === 'automatic' ? null : '', { shouldDirty: true })
+      clearErrors('value')
     }
+    clearErrors('kind')
+    setError('')
   }
-  async function submit(event) {
-    event.preventDefault()
+  async function submit(values) {
     if (submitting.current) return
     submitting.current = true
-    setSaving(true)
     setError('')
     try {
-      // Only editable fields cross the API boundary.
-      await onSave({
-        id: deduction?.id,
-        month,
-        name: values.name,
-        description: values.description,
-        kind: values.kind,
-        value: values.value,
-        appliesTo: values.appliesTo,
-        employeeIds: values.employeeIds,
-        active: values.active,
-      })
+      // Saved identity comes from the current deduction, never editable inputs.
+      await onSave({ ...values, id: deduction?.id, month })
       onClose()
     } catch (failure) {
       setError(failure?.message || 'The deduction could not be saved.')
     } finally {
       submitting.current = false
-      setSaving(false)
     }
   }
   if (discard)
@@ -98,41 +98,39 @@ export default function AddDeductionModal({
       onClose={close}
       className="payroll-deduction-modal"
     >
-      <form onSubmit={submit} noValidate aria-busy={saving}>
+      <form ref={formRef} onSubmit={(event) => handleSubmit(submit, invalid)(event)} noValidate aria-busy={saving}>
         <fieldset className="leave-form-fieldset" disabled={saving}>
           <div className="employee-fields-grid leave-form-grid">
             <label className="full-width">
               Deduction name <span>*</span>
               <input
-                value={values.name}
+                {...fieldProps('name')}
                 maxLength={80}
                 required
-                onChange={(event) => change('name', event.target.value)}
                 placeholder="e.g. Loan repayment"
-              />
+              />{fieldError('name')}
             </label>
             <label className="full-width">
               Description <span>*</span>
               <textarea
-                value={values.description}
+                {...fieldProps('description')}
                 maxLength={300}
                 rows={2}
                 required
-                onChange={(event) => change('description', event.target.value)}
-              />
+              />{fieldError('description')}
             </label>
             <label>
               Calculation{' '}
               <select
-                value={values.kind}
-                onChange={(event) => changeCalculation(event.target.value)}
+                {...register('kind', { onChange: changeCalculation })}
+                aria-invalid={!!errors.kind}
               >
                 {deduction?.type === 'incomeTax' && (
                   <option value="automatic">Payroll calculation</option>
                 )}
                 <option value="fixed">Fixed amount (ETB)</option>
                 <option value="percent">Percentage of gross salary</option>
-              </select>
+              </select>{fieldError('kind')}
             </label>
             {values.kind !== 'automatic' && (
               <label>
@@ -143,21 +141,19 @@ export default function AddDeductionModal({
                   min="0.01"
                   max={values.kind === 'percent' ? 100 : undefined}
                   step="0.01"
-                  value={values.value}
+                  {...fieldProps('value')}
                   required
-                  onChange={(event) => change('value', event.target.value)}
-                />
+                />{fieldError('value')}
               </label>
             )}
             <label className="full-width">
               Applies to{' '}
               <select
-                value={values.appliesTo}
-                onChange={(event) => change('appliesTo', event.target.value)}
+                {...fieldProps('appliesTo')}
               >
                 <option value="all">All employees in this payroll</option>
                 <option value="selected">Selected employees</option>
-              </select>
+              </select>{fieldError('appliesTo')}
             </label>
             {values.appliesTo === 'selected' && (
               <fieldset className="payroll-employee-picker full-width">
@@ -168,6 +164,7 @@ export default function AddDeductionModal({
                   <label key={employee.id}>
                     <input
                       type="checkbox"
+                      name="employeeIds"
                       checked={values.employeeIds.includes(employee.id)}
                       onChange={(event) =>
                         selectEmployee(employee.id, event.target.checked)
@@ -179,13 +176,13 @@ export default function AddDeductionModal({
                     </span>
                   </label>
                 ))}
+                {fieldError('employeeIds')}
               </fieldset>
             )}
             <label className="payroll-active-checkbox full-width">
               <input
                 type="checkbox"
-                checked={values.active}
-                onChange={(event) => change('active', event.target.checked)}
+                {...fieldProps('active')}
               />
               Apply this deduction
             </label>

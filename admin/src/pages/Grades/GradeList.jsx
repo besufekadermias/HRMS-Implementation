@@ -270,8 +270,8 @@ export default function GradeList({
           employees={employees}
           onDirtyChange={onDirtyChange}
           onClose={closeEditor}
-          onSave={(values) => {
-            onSave(values)
+          onSave={async (values) => {
+            await onSave(values)
             closeEditor()
             clearFilters()
           }}

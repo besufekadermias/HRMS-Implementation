@@ -1,3 +1,4 @@
+import { payrollResponseSchema } from '../../utils/validation/operationsSchemas.js';
 import { cents } from "./payrollCalculations.js";
 
 const PAYROLL_RESPONSE_ERROR =
@@ -89,10 +90,7 @@ export function validatePayrollPolicy(policy) {
 
 export function validatePayrollResponse(data) {
   if (
-    !data ||
-    !Array.isArray(data.runs) ||
-    !Array.isArray(data.deductions) ||
-    !Array.isArray(data.monthlyPolicies) ||
+    !payrollResponseSchema.safeParse(data).success ||
     !validatePayrollPolicy(data.policy)
   ) {
     throw new Error(PAYROLL_RESPONSE_ERROR);

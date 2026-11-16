@@ -25,8 +25,8 @@ export default function Documents({ documents, search, onSearch, onSave, onDelet
     onDirtyChange(false)
   }
 
-  function save(values) {
-    onSave(values)
+  async function save(values) {
+    await onSave(values)
     clearFilters()
   }
 

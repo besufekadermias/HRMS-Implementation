@@ -1,3 +1,5 @@
+import { deductionSchema } from '../../utils/validation/operationsSchemas.js';
+import { validateInput } from '../../utils/validation/schemaHelpers.js';
 import { cents } from "./payrollCalculations.js";
 
 // Shared by Add/Edit Deduction and the tax/pension editor.
@@ -7,12 +9,9 @@ export function normalizeDeductionFields(
   run,
   allowAutomatic = false,
 ) {
-  const name = String(values.name || "").trim();
-  const description = String(values.description || "").trim();
-  if (!name || name.length > 80)
-    throw new Error("Enter a deduction name of 1–80 characters.");
-  if (!description || description.length > 300)
-    throw new Error("Enter a description of 1–300 characters.");
+  validateInput(deductionSchema, values);
+  const name = values.name.trim();
+  const description = values.description.trim();
   const isAutomatic = allowAutomatic && values.kind === "automatic";
   if (!isAutomatic && !["fixed", "percent"].includes(values.kind)) {
     throw new Error("Choose an amount or percentage.");
@@ -31,12 +30,6 @@ export function normalizeDeductionFields(
       );
     }
   }
-  if (!["all", "selected"].includes(values.appliesTo))
-    throw new Error("Choose which employees this deduction applies to.");
-  if (!Array.isArray(values.employeeIds))
-    throw new Error("Select valid employees for this deduction.");
-  if (typeof values.active !== "boolean")
-    throw new Error("Choose whether to apply this deduction.");
   // Saved payroll employees remain selectable after leaving the current roster.
   const availableIds = new Set();
   for (const employee of employees) availableIds.add(employee.id);

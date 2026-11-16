@@ -1,30 +1,29 @@
 import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { loginSchema } from '../../utils/validation/authSchema.js'
 import { DEMO_LOGIN } from '../../services/auth/authService.js'
 
 export default function Login({ onSignIn }) {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm({
+    defaultValues: { email: '', password: '' },
+    resolver: zodResolver(loginSchema, undefined, { raw: true }),
+  })
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  async function handleSubmit(event) {
-    event.preventDefault()
+  async function submit(values) {
     setError('')
-    setIsSubmitting(true)
 
     try {
-      await onSignIn({ email, password })
+      await onSignIn(values)
     } catch (error) {
       setError(error.message || 'Unable to sign in. Please try again.')
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
   function fillDemoAccount() {
-    setEmail(DEMO_LOGIN.email)
-    setPassword(DEMO_LOGIN.password)
+    reset({ email: DEMO_LOGIN.email, password: DEMO_LOGIN.password })
     setShowPassword(false)
     setError('')
   }
@@ -37,40 +36,36 @@ export default function Login({ onSignIn }) {
         <h1 id="login-title">Admin login</h1>
         <p className="login-subtitle">Welcome back. Sign in to your HR workspace.</p>
 
-        <form className="login-form" onSubmit={handleSubmit} aria-busy={isSubmitting}>
+        <form className="login-form" onSubmit={handleSubmit(submit)} aria-busy={isSubmitting} noValidate>
           <label htmlFor="login-email">Email address</label>
           <input
             className="login-input"
             id="login-email"
-            name="email"
+            {...register('email', { onChange: () => setError('') })}
             type="email"
             autoComplete="username"
             placeholder="Enter your email"
-            value={email}
-            onChange={(event) => {
-              setEmail(event.target.value)
-              setError('')
-            }}
+            aria-invalid={!!errors.email}
+            aria-describedby={errors.email ? 'login-email-error' : undefined}
             disabled={isSubmitting}
             required
           />
+          {errors.email && <small id="login-email-error" className="login-error">{errors.email.message}</small>}
 
           <label htmlFor="login-password">Password</label>
           <input
             className="login-input"
             id="login-password"
-            name="password"
+            {...register('password', { onChange: () => setError('') })}
             type={showPassword ? 'text' : 'password'}
             autoComplete="current-password"
             placeholder="Enter your password"
-            value={password}
-            onChange={(event) => {
-              setPassword(event.target.value)
-              setError('')
-            }}
+            aria-invalid={!!errors.password}
+            aria-describedby={errors.password ? 'login-password-error' : undefined}
             disabled={isSubmitting}
             required
           />
+          {errors.password && <small id="login-password-error" className="login-error">{errors.password.message}</small>}
 
           <label className="login-show-password">
             <input

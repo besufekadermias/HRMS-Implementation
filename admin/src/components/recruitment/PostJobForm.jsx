@@ -1,58 +1,64 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useForm, useWatch } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { jobFormSchema } from '../../utils/validation/recruitmentSchema.js'
+import { showFormErrors } from '../../utils/validation/formErrors.js'
 import Modal from '../common/Modal.jsx'
 import ConfirmationModal from '../common/ConfirmationModal.jsx'
-import { JOB_STATUSES, validateJob } from '../../services/recruitment/recruitmentService.js'
+import { JOB_STATUSES, validateJobRules } from '../../services/recruitment/recruitmentService.js'
 
 export default function PostJobForm({ job, departments, onSave, onClose, onDirtyChange }) {
   const [initial] = useState(() => ({
     title: job?.title || '', departmentId: String(job?.departmentId || ''),
     deadline: job?.deadline || '', status: job?.status || 'OPEN', description: job?.description || '',
   }))
-  const [values, setValues] = useState(initial)
-  const [errors, setErrors] = useState({})
+  const { register, control, handleSubmit, setError, setFocus, clearErrors,
+    formState: { errors, isDirty, isSubmitting: saving },
+  } = useForm({
+    defaultValues: initial,
+    resolver: zodResolver(jobFormSchema, undefined, { raw: true }),
+  })
+  const values = useWatch({ control })
   const [saveError, setSaveError] = useState('')
   const [discarding, setDiscarding] = useState(false)
-  const formRef = useRef(null)
-  const dirty = Object.keys(initial).some((key) => values[key] !== initial[key])
+  const savingRef = useRef(false)
+  const dirty = isDirty
+
+  useEffect(() => { onDirtyChange(dirty) }, [dirty, onDirtyChange])
   const activeDepartments = departments.filter((department) => department.status === 'Active')
 
-  function change(name, value) {
-    const next = { ...values, [name]: value }
-    setValues(next)
-    setErrors((current) => ({ ...current, [name]: undefined }))
-    setSaveError('')
-    onDirtyChange(Object.keys(initial).some((key) => next[key] !== initial[key]))
-  }
-
   function close() {
+    if (saving || savingRef.current) return
     if (dirty) setDiscarding(true)
     else onClose()
   }
 
-  function submit(event) {
-    event.preventDefault()
-    const nextErrors = validateJob(values, departments)
-    setErrors(nextErrors)
-    if (Object.keys(nextErrors).length) {
-      formRef.current.elements.namedItem(Object.keys(nextErrors)[0])?.focus()
-      return
-    }
+  async function submit(values) {
+    if (savingRef.current) return
+    setSaveError('')
+    if (showFormErrors(validateJobRules(values, departments), setError, setFocus)) return
+    savingRef.current = true
     try {
-      onSave({ ...values, id: job?.id })
+      await onSave({ ...values, id: job?.id })
       onClose()
     } catch (error) {
       setSaveError(error.message || 'The vacancy could not be saved. Please try again.')
+    } finally {
+      savingRef.current = false
     }
   }
 
   function fieldProps(name) {
     return {
-      name, value: values[name], onChange: (event) => change(name, event.target.value),
+      ...register(name, { onChange: () => {
+        clearErrors(name)
+        setSaveError('')
+      } }), disabled: saving,
       'aria-invalid': !!errors[name], 'aria-describedby': errors[name] ? `job-${name}-error` : undefined,
     }
   }
   function fieldError(name) {
-    return errors[name] && <small className="field-error" id={`job-${name}-error`}>{errors[name]}</small>
+    return errors[name] && <small className="field-error" id={`job-${name}-error`}>{errors[name].message}</small>
   }
 
   if (discarding) return <ConfirmationModal title="Discard vacancy changes?" confirmLabel="Discard changes"
@@ -61,7 +67,7 @@ export default function PostJobForm({ job, departments, onSave, onClose, onDirty
   </ConfirmationModal>
 
   return <Modal className="recruitment-modal" title={job ? 'Edit Job Vacancy' : 'Create New Job Vacancy'} onClose={close}>
-    <form ref={formRef} onSubmit={submit} noValidate>
+    <form onSubmit={(event) => handleSubmit(submit)(event)} noValidate aria-busy={saving}>
       <div className="form-grid recruitment-fields">
         <label className="recruitment-wide">Job title <span>*</span>
           <input {...fieldProps('title')} placeholder="e.g. Senior Network Infrastructure Engineer" maxLength={100} required />
@@ -94,8 +100,8 @@ export default function PostJobForm({ job, departments, onSave, onClose, onDirty
       {saveError && <p className="form-error" role="alert">{saveError}</p>}
       {!activeDepartments.length && <p className="form-error" role="alert">Add an active department before posting a vacancy.</p>}
       <div className="modal-actions">
-        <button type="button" className="button button-secondary" onClick={close}>Cancel</button>
-        <button type="submit" className="button button-primary" disabled={!activeDepartments.length}>
+        <button type="button" className="button button-secondary" onClick={close} disabled={saving}>Cancel</button>
+        <button type="submit" className="button button-primary" disabled={saving || !activeDepartments.length}>
           {job ? 'Save Changes' : values.status === 'CLOSED' ? 'Save Vacancy' : 'Publish Vacancy'}
         </button>
       </div>

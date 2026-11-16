@@ -1,3 +1,4 @@
+import { leaveResponseSchema } from '../../utils/validation/operationsSchemas.js';
 // Backend connection point. Replace these async method bodies with API calls.
 // They currently return in-memory data so the UI works before the server exists.
 // Contract and examples: admin/docs/leave-backend-handoff.md
@@ -92,10 +93,7 @@ export function createLeaveApi({ now = () => new Date() } = {}) {
 // This checks the UI contract; authorization and business rules belong on the server.
 export function validateLeaveResponse(data) {
   if (
-    !data ||
-    !Array.isArray(data.requests) ||
-    !Array.isArray(data.balances) ||
-    !data.settings ||
+    !leaveResponseSchema.safeParse(data).success ||
     Object.keys(validateLeaveSettings(data.settings)).length
   ) {
     throw new Error(

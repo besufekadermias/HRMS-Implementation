@@ -1,6 +1,7 @@
+import { leaveSettingsSchema, leaveRequestSchema } from '../../utils/validation/operationsSchemas.js';
+import { fieldErrors, validateInput, wholeNumber } from '../../utils/validation/schemaHelpers.js';
 import {
   INITIAL_LEAVE_SETTINGS,
-  MAX_LEAVE_BALANCE,
 } from "../../utils/constants/constants.js";
 import {
   isValidDate,
@@ -274,42 +275,17 @@ export function countLeaveDays(startDate, endDate, mode = "calendar") {
 }
 
 export function validateLeaveSettings(values, balances = []) {
-  const errors = {};
-  for (const [key, label, min, max] of [
-    ["defaultEntitlement", "Annual entitlement", 1, MAX_LEAVE_BALANCE],
-    ["maxBalance", "Balance cap", 1, MAX_LEAVE_BALANCE],
-    ["noticeDays", "Notice period", 0, 365],
-  ]) {
-    if (
-      !/^\d+$/.test(String(values[key])) ||
-      Number(values[key]) < min ||
-      Number(values[key]) > max
-    ) {
-      errors[key] = `${label} must be a whole number from ${min} to ${max}.`;
-    }
-  }
-  if (
-    !errors.defaultEntitlement &&
-    !errors.maxBalance &&
-    Number(values.defaultEntitlement) > Number(values.maxBalance)
-  ) {
-    errors.defaultEntitlement =
-      "Annual entitlement cannot exceed the balance cap.";
-  }
-  if (!["calendar", "weekdays"].includes(values.dayCounting))
-    errors.dayCounting = "Choose calendar days or Monday–Friday.";
-  if (typeof values.requireRejectionReason !== "boolean")
-    errors.requireRejectionReason =
-      "Choose whether a rejection reason is required.";
-  if (
-    !errors.maxBalance &&
-    balances.some((balance) => {
-      const current = getLeaveBalance(balance);
-      return current && current.remaining > Number(values.maxBalance);
-    })
-  )
-    errors.maxBalance =
-      "An existing balance exceeds this cap. Adjust that entitlement before lowering the cap.";
+  return validateLeaveSettingsRules(values, balances, fieldErrors(leaveSettingsSchema, values));
+}
+
+export function validateLeaveSettingsRules(values, balances = [], errors = {}) {
+  if (!values || typeof values !== 'object') return errors;
+  if (!errors.defaultEntitlement && !errors.maxBalance && Number(values.defaultEntitlement) > Number(values.maxBalance))
+    errors.defaultEntitlement = 'Annual entitlement cannot exceed the balance cap.';
+  if (!errors.maxBalance && balances.some(balance => {
+    const current = getLeaveBalance(balance);
+    return current && current.remaining > Number(values.maxBalance);
+  })) errors.maxBalance = 'An existing balance exceeds this cap. Adjust that entitlement before lowering the cap.';
   return errors;
 }
 
@@ -340,6 +316,7 @@ export function saveLeaveRequest(
   if (!employee) throw new Error("Choose an employee from the roster.");
   if (original && original.employeeId !== employee.id)
     throw new Error("The employee cannot be changed on an existing request.");
+  validateInput(leaveRequestSchema, values);
   const daysRequested = countLeaveDays(
     values.startDate,
     values.endDate,
@@ -441,6 +418,7 @@ export function saveLeaveEntitlement(
       "The existing balance is invalid and must be reconciled before adjustment.",
     );
   const used = original?.used || 0;
+  validateInput(wholeNumber(0, Number.MAX_SAFE_INTEGER, `Accrued days must leave a remaining balance between 0 and ${settings.maxBalance}. Used leave is ${used} days.`), values.accrued);
   const accrued = Number(values.accrued);
   if (
     !/^\d+$/.test(String(values.accrued)) ||

@@ -51,7 +51,7 @@ export default function RecruitmentDashboard({ data, departments, search, onSear
       </div>}
       <div className="recruitment-table-footer" role="status">{rows.length} of {data.jobs.length} vacancies</div>
     </section>
-    {editing && <PostJobForm job={editing.id ? editing : null} departments={departments} onSave={(values) => { onSave(values); setError(''); onSearch(''); setStatus('') }}
+    {editing && <PostJobForm job={editing.id ? editing : null} departments={departments} onSave={async (values) => { await onSave(values); setError(''); onSearch(''); setStatus('') }}
       onClose={closeForm} onDirtyChange={onDirtyChange} />}
   </div>
 }

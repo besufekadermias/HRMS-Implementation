@@ -1,3 +1,5 @@
+import { payrollMonthSchema } from '../../utils/validation/operationsSchemas.js';
+import { validateInput } from '../../utils/validation/schemaHelpers.js';
 import {
   isValidDate,
   todayInNairobi,
@@ -11,15 +13,9 @@ import {
 import { normalizeDeductionFields } from "./payrollDeductionFields.js";
 
 export function validatePayrollMonth(month, today = todayInNairobi()) {
-  if (
-    !/^\d{4}-(0[1-9]|1[0-2])$/.test(month || "") ||
-    !isValidDate(`${month}-01`)
-  )
-    throw new Error("Choose a valid payroll month.");
+  validateInput(payrollMonthSchema, month);
   if (month > today.slice(0, 7))
-    throw new Error(
-      "Payroll can be generated for the current month or an earlier month.",
-    );
+    throw new Error('Payroll can be generated for the current month or an earlier month.');
 }
 
 export function generatePayroll(

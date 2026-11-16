@@ -1,3 +1,5 @@
+import { documentSchema } from '../../utils/validation/communicationsSchemas.js';
+import { fieldErrors } from '../../utils/validation/schemaHelpers.js';
 import { todayInNairobi } from "../../utils/validation/validators.js";
 import { COMMUNICATION_AUDIENCES, audienceLabel } from "./audiences.js";
 
@@ -52,33 +54,20 @@ export function documentUrl(value) {
 }
 
 export function validateDocument(values) {
-  const errors = {};
-  const title = (values.title || "").trim();
-  if (!title || title.length > 150)
-    errors.title = "Enter a document title of 1–150 characters.";
-  if (
-    !DOCUMENT_AUDIENCES.some(
-      (audience) => audience.value === values.targetAudience,
-    )
-  )
-    errors.targetAudience = "Select Public, Employees, or Both.";
-  if (!["FILE", "URL"].includes(values.source))
-    errors.source = "Choose an upload or a URL.";
-  if (values.source === "URL" && !documentUrl(values.url))
-    errors.url =
-      "Enter a complete http:// or https:// link without spaces or embedded credentials (up to 2,048 characters).";
-  if (values.source === "FILE") {
+  return validateDocumentRules(values, fieldErrors(documentSchema, values));
+}
+
+export function validateDocumentRules(values, errors = {}) {
+  if (!values || typeof values !== 'object') return errors;
+  if (values.source === 'URL' && !documentUrl(values.url))
+    errors.url = 'Enter a complete http:// or https:// link without spaces or embedded credentials (up to 2,048 characters).';
+  if (values.source === 'FILE') {
     const file = values.file;
-    if (!(file instanceof File)) errors.file = "Choose a document to upload.";
-    else if (!file.size)
-      errors.file = "This file is empty. Choose a file with content.";
-    else if (file.size > MAX_DOCUMENT_BYTES)
-      errors.file = "Choose a file no larger than 10 MB.";
-    else if (
-      !DOCUMENT_EXTENSIONS.includes(file.name.split(".").pop().toLowerCase())
-    )
-      errors.file =
-        "Choose a PDF, Word, Excel, PowerPoint, text, CSV, JPG, or PNG file.";
+    if (typeof File === 'undefined' || !(file instanceof File)) errors.file = 'Choose a document to upload.';
+    else if (!file.size) errors.file = 'This file is empty. Choose a file with content.';
+    else if (file.size > MAX_DOCUMENT_BYTES) errors.file = 'Choose a file no larger than 10 MB.';
+    else if (!DOCUMENT_EXTENSIONS.includes(file.name.split('.').pop().toLowerCase()))
+      errors.file = 'Choose a PDF, Word, Excel, PowerPoint, text, CSV, JPG, or PNG file.';
   }
   return errors;
 }

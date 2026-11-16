@@ -1,9 +1,8 @@
+import { SERVICE_TYPES, getServiceSchema } from '../../utils/validation/communicationsSchemas.js';
+import { fieldErrors } from '../../utils/validation/schemaHelpers.js';
 import { todayInNairobi } from "../../utils/validation/validators.js";
 
-export const SERVICE_TYPES = [
-  { value: "SERVICE", label: "Public service" },
-  { value: "TRAINING", label: "Training program" },
-];
+export { SERVICE_TYPES };
 
 // Add confirmed offerings through the form. The reference only shows the public homepage.
 export const INITIAL_SERVICES = [];
@@ -37,36 +36,20 @@ export function serviceLink(value) {
 }
 
 export function validateService(values) {
-  const errors = {};
-  if (!values.title?.trim() || values.title.trim().length > 150)
-    errors.title = "Enter a service name of 1–150 characters.";
-  if (!SERVICE_TYPES.some((item) => item.value === values.type))
-    errors.type = "Choose a service type.";
-  if (!["DRAFT", "PUBLISHED"].includes(values.status))
-    errors.status = "Choose Draft or Published.";
-  const limits = {
-    description: 2000,
-    requirements: 1000,
-    howToAccess: 1000,
-    location: 200,
-    schedule: 200,
-    fees: 200,
-  };
-  for (const [field, limit] of Object.entries(limits)) {
-    if (field === "schedule" && values.type !== "TRAINING") continue;
-    if ((values[field] || "").trim().length > limit)
-      errors[field] = `Use ${limit.toLocaleString()} characters or fewer.`;
+  return validateServiceRules(values, fieldErrors(getServiceSchema(values?.type), values));
+}
+
+export function validateServiceRules(values, errors = {}) {
+  if (!values || typeof values !== 'object') return errors;
+  if (values.status === 'PUBLISHED') {
+    if (typeof values.description !== 'string' || !values.description.trim())
+      errors.description = 'Add a description before publishing.';
+    if (typeof values.howToAccess !== 'string' || !values.howToAccess.trim())
+      errors.howToAccess = 'Explain how the public can access this service before publishing.';
   }
-  if (values.status === "PUBLISHED") {
-    if (!values.description?.trim())
-      errors.description = "Add a description before publishing.";
-    if (!values.howToAccess?.trim())
-      errors.howToAccess =
-        "Explain how the public can access this service before publishing.";
-  }
-  if (values.registrationUrl?.trim() && !serviceLink(values.registrationUrl))
-    errors.registrationUrl =
-      "Enter a complete HTTP/HTTPS link without spaces or embedded credentials (up to 2,048 characters).";
+  const registrationUrl = typeof values.registrationUrl === 'string' ? values.registrationUrl.trim() : values.registrationUrl;
+  if (registrationUrl && !serviceLink(registrationUrl))
+    errors.registrationUrl = 'Enter a complete HTTP/HTTPS link without spaces or embedded credentials (up to 2,048 characters).';
   return errors;
 }
 

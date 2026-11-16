@@ -1,56 +1,59 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { announcementSchema } from '../../utils/validation/communicationsSchemas.js'
 import Modal from '../common/Modal.jsx'
 import ConfirmationModal from '../common/ConfirmationModal.jsx'
 import Icon from '../common/Icon.jsx'
-import { ANNOUNCEMENT_AUDIENCES, validateAnnouncement } from '../../services/communications/announcementService.js'
+import { ANNOUNCEMENT_AUDIENCES } from '../../services/communications/announcementService.js'
 
 const EMPTY_ANNOUNCEMENT = { title: '', targetAudience: 'ALL', content: '' }
 
 export default function PostAnnouncementModal({ onSave, onClose, onDirtyChange }) {
-  const [values, setValues] = useState(EMPTY_ANNOUNCEMENT)
-  const [errors, setErrors] = useState({})
+  const { register, handleSubmit, clearErrors,
+    formState: { errors, isDirty, isSubmitting: saving },
+  } = useForm({
+    defaultValues: EMPTY_ANNOUNCEMENT,
+    resolver: zodResolver(announcementSchema, undefined, { raw: true }),
+  })
   const [saveError, setSaveError] = useState('')
   const [discarding, setDiscarding] = useState(false)
-  const formRef = useRef(null)
-  const dirty = Object.keys(values).some((key) => values[key] !== EMPTY_ANNOUNCEMENT[key])
+  const savingRef = useRef(false)
+  const dirty = isDirty
 
-  function change(name, value) {
-    const next = { ...values, [name]: value }
-    setValues(next)
-    setErrors((current) => ({ ...current, [name]: undefined }))
-    setSaveError('')
-    onDirtyChange(Object.keys(next).some((key) => next[key] !== EMPTY_ANNOUNCEMENT[key]))
-  }
+  useEffect(() => { onDirtyChange(dirty) }, [dirty, onDirtyChange])
 
   function close() {
+    if (saving || savingRef.current) return
     if (dirty) setDiscarding(true)
     else onClose()
   }
 
-  function submit(event) {
-    event.preventDefault()
-    const nextErrors = validateAnnouncement(values)
-    setErrors(nextErrors)
-    if (Object.keys(nextErrors).length) {
-      formRef.current.elements.namedItem(Object.keys(nextErrors)[0])?.focus()
-      return
-    }
+  async function submit(values) {
+    if (savingRef.current) return
+    setSaveError('')
+    savingRef.current = true
     try {
-      onSave(values)
+      await onSave(values)
       onClose()
     } catch (error) {
       setSaveError(error.message || 'The announcement could not be saved. Please try again.')
+    } finally {
+      savingRef.current = false
     }
   }
 
   function fieldProps(name) {
     return {
-      name, value: values[name], onChange: (event) => change(name, event.target.value),
+      ...register(name, { onChange: () => {
+        clearErrors(name)
+        setSaveError('')
+      } }), disabled: saving,
       'aria-invalid': !!errors[name], 'aria-describedby': errors[name] ? `announcement-${name}-error` : undefined,
     }
   }
   function fieldError(name) {
-    return errors[name] && <small className="field-error" id={`announcement-${name}-error`}>{errors[name]}</small>
+    return errors[name] && <small className="field-error" id={`announcement-${name}-error`}>{errors[name].message}</small>
   }
 
   if (discarding) return <ConfirmationModal title="Discard announcement?" confirmLabel="Discard changes"
@@ -59,7 +62,7 @@ export default function PostAnnouncementModal({ onSave, onClose, onDirtyChange }
   </ConfirmationModal>
 
   return <Modal className="announcement-modal" title={<><Icon name="megaphone" size={25} />Post New Announcement</>} onClose={close}>
-    <form ref={formRef} onSubmit={submit} noValidate>
+    <form onSubmit={(event) => handleSubmit(submit)(event)} noValidate aria-busy={saving}>
       <div className="form-grid announcement-fields">
         <label>Announcement title <span>*</span>
           <input {...fieldProps('title')} placeholder="e.g. Annual IT Systems Maintenance Schedule" maxLength={150} required />
@@ -78,8 +81,8 @@ export default function PostAnnouncementModal({ onSave, onClose, onDirtyChange }
       </div>
       {saveError && <p className="form-error" role="alert">{saveError}</p>}
       <div className="modal-actions">
-        <button type="button" className="button button-secondary" onClick={close}>Cancel</button>
-        <button type="submit" className="button button-primary">Broadcast Notice</button>
+        <button type="button" className="button button-secondary" onClick={close} disabled={saving}>Cancel</button>
+        <button type="submit" className="button button-primary" disabled={saving}>Broadcast Notice</button>
       </div>
     </form>
   </Modal>

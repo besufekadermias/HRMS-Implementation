@@ -1,9 +1,11 @@
+export { JOB_STATUSES } from '../../utils/validation/recruitmentSchema.js';
+import { jobSchema } from '../../utils/validation/recruitmentSchema.js';
+import { fieldErrors } from '../../utils/validation/schemaHelpers.js';
 import {
-  isValidDate,
   todayInNairobi,
 } from "../../utils/validation/validators.js";
 
-export const JOB_STATUSES = ["OPEN", "CLOSED"];
+
 // HIRED remains readable for historical records; application review cannot hire.
 export const APPLICATION_STATUSES = [
   "PENDING",
@@ -111,29 +113,15 @@ export const INITIAL_RECRUITMENT = {
 };
 
 export function validateJob(values, departments, today = todayInNairobi()) {
-  const errors = {};
-  const title = (values.title || "").trim();
-  const description = (values.description || "").trim();
-  if (!title || title.length > 100)
-    errors.title = "Enter a job title of 1–100 characters.";
-  const department = departments.find(
-    (item) => String(item.id) === String(values.departmentId),
-  );
-  if (!department || department.status !== "Active")
-    errors.departmentId = "Select an active department.";
-  if (
-    !isValidDate(values.deadline) ||
-    values.deadline < "1900-01-01" ||
-    values.deadline > "2100-12-31"
-  ) {
-    errors.deadline = "Enter a valid application deadline.";
-  } else if (values.status === "OPEN" && values.deadline < today) {
-    errors.deadline = "An open vacancy needs a deadline of today or later.";
-  }
-  if (!JOB_STATUSES.includes(values.status))
-    errors.status = "Select Open or Closed.";
-  if (!description || description.length > 5000)
-    errors.description = "Enter a job description of 1–5,000 characters.";
+  return validateJobRules(values, departments, today, fieldErrors(jobSchema, values));
+}
+
+export function validateJobRules(values, departments, today = todayInNairobi(), errors = {}) {
+  if (!values || typeof values !== 'object') return errors;
+  const department = departments.find(item => String(item.id) === String(values.departmentId));
+  if (!department || department.status !== 'Active') errors.departmentId = 'Select an active department.';
+  if (!errors.deadline && values.status === 'OPEN' && values.deadline < today)
+    errors.deadline = 'An open vacancy needs a deadline of today or later.';
   return errors;
 }
 

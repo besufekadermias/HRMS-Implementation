@@ -9,9 +9,11 @@ import {
 import formatCurrency from '../../utils/formatters/formatCurrency.js'
 
 export default function JobDetailsForm({
-  values,
+  register,
+  grade,
+  educationDocument,
   errors,
-  onChange,
+  onChangeUpload,
   editing,
   departments = DEPARTMENTS,
   grades = JOB_GRADES,
@@ -29,9 +31,9 @@ export default function JobDetailsForm({
       return
     }
     setDocumentError('')
-    onChange('educationDocument', { name: file.name, size: file.size, file })
+    onChangeUpload('educationDocument', { name: file.name, size: file.size, file })
   }
-  const salary = grades.find((grade) => grade.name === values.grade)?.salary
+  const salary = grades.find((item) => item.name === grade)?.salary
   return (
     <fieldset className="employee-form-section">
       <legend>
@@ -46,9 +48,7 @@ export default function JobDetailsForm({
         <label>
           Assigned department <span>*</span>
           <select
-            name="department"
-            value={values.department}
-            onChange={(event) => onChange('department', event.target.value)}
+            {...register('department')}
             required
             aria-invalid={!!errors.department}
           >
@@ -58,15 +58,13 @@ export default function JobDetailsForm({
             ))}
           </select>
           {errors.department && (
-            <small className="field-error">{errors.department}</small>
+            <small className="field-error">{errors.department.message}</small>
           )}
         </label>
         <label>
           Civil job grade <span>*</span>
           <select
-            name="grade"
-            value={values.grade}
-            onChange={(event) => onChange('grade', event.target.value)}
+            {...register('grade')}
             required
             aria-invalid={!!errors.grade}
           >
@@ -76,7 +74,7 @@ export default function JobDetailsForm({
             ))}
           </select>
           {errors.grade && (
-            <small className="field-error">{errors.grade}</small>
+            <small className="field-error">{errors.grade.message}</small>
           )}
           {!grades.length && (
             <small className="field-hint">
@@ -94,9 +92,7 @@ export default function JobDetailsForm({
         <label>
           Employment type <span>*</span>
           <select
-            name="employmentType"
-            value={values.employmentType}
-            onChange={(event) => onChange('employmentType', event.target.value)}
+            {...register('employmentType')}
             required
             aria-invalid={!!errors.employmentType}
           >
@@ -106,32 +102,28 @@ export default function JobDetailsForm({
             ))}
           </select>
           {errors.employmentType && (
-            <small className="field-error">{errors.employmentType}</small>
+            <small className="field-error">{errors.employmentType.message}</small>
           )}
         </label>
         <label>
           Hired date <span>*</span>
           <input
-            name="hiredDate"
+            {...register('hiredDate')}
             type="date"
-            value={values.hiredDate}
-            onChange={(event) => onChange('hiredDate', event.target.value)}
             min="1900-01-01"
             max="2100-12-31"
             required
             aria-invalid={!!errors.hiredDate}
           />
           {errors.hiredDate && (
-            <small className="field-error">{errors.hiredDate}</small>
+            <small className="field-error">{errors.hiredDate.message}</small>
           )}
         </label>
         {editing && (
           <label>
             Status
             <select
-              name="status"
-              value={values.status}
-              onChange={(event) => onChange('status', event.target.value)}
+              {...register('status')}
             >
               {EMPLOYEE_STATUSES.map((status) => (
                 <option key={status}>{status}</option>
@@ -159,22 +151,22 @@ export default function JobDetailsForm({
               }}
             />
             <Icon
-              name={values.educationDocument ? 'file' : 'upload'}
+              name={educationDocument ? 'file' : 'upload'}
               size={23}
             />
             <span>
               <strong>
-                {values.educationDocument?.name ||
+                {educationDocument?.name ||
                   'Click to upload or drag and drop'}
               </strong>
               <small>PDF, DOC, DOCX, JPG, PNG · Up to 10 MB</small>
             </span>
           </label>
-          {values.educationDocument && (
+          {educationDocument && (
             <button
               className="text-button"
               type="button"
-              onClick={() => onChange('educationDocument', null)}
+              onClick={() => onChangeUpload('educationDocument', null)}
             >
               Remove document
             </button>

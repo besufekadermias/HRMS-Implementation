@@ -1,49 +1,42 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { disciplinaryActionFormSchema } from '../../utils/validation/growthSchemas.js'
+import { showFormErrors } from '../../utils/validation/formErrors.js'
 import Modal from '../common/Modal.jsx'
 import ConfirmationModal from '../common/ConfirmationModal.jsx'
 import Icon from '../common/Icon.jsx'
-import { SANCTIONS, validateDisciplinaryAction } from '../../services/growth/disciplineService.js'
+import { SANCTIONS, validateDisciplinaryActionRules } from '../../services/growth/disciplineService.js'
 import { todayInNairobi } from '../../utils/validation/validators.js'
 
 export default function RecordDisciplinaryActionModal({ employees, onSave, onClose, onDirtyChange }) {
   const [initial] = useState(() => ({
     employeeId: '', incidentDate: todayInNairobi(), violationType: '', penaltyAction: 'WARNING', description: '',
   }))
-  const [values, setValues] = useState(initial)
-  const [errors, setErrors] = useState({})
+  const { register, handleSubmit, setError, setFocus, clearErrors,
+    formState: { errors, isDirty, isSubmitting: saving },
+  } = useForm({
+    defaultValues: initial,
+    resolver: zodResolver(disciplinaryActionFormSchema, undefined, { raw: true }),
+  })
   const [saveError, setSaveError] = useState('')
-  const [saving, setSaving] = useState(false)
   const [confirmDiscard, setConfirmDiscard] = useState(false)
-  const formRef = useRef(null)
   const savingRef = useRef(false)
-  const dirty = Object.keys(initial).some((key) => values[key] !== initial[key])
+  const dirty = isDirty
 
-  function change(name, value) {
-    const next = { ...values, [name]: value }
-    setValues(next)
-    setErrors((current) => ({ ...current, [name]: undefined }))
-    setSaveError('')
-    onDirtyChange(Object.keys(initial).some((key) => next[key] !== initial[key]))
-  }
+  useEffect(() => { onDirtyChange(dirty) }, [dirty, onDirtyChange])
 
   function close() {
-    if (savingRef.current) return
+    if (saving || savingRef.current) return
     if (dirty) setConfirmDiscard(true)
     else onClose()
   }
 
-  async function submit(event) {
-    event.preventDefault()
+  async function submit(values) {
     if (savingRef.current) return
-    const nextErrors = validateDisciplinaryAction(values, employees)
-    setErrors(nextErrors)
-    if (Object.keys(nextErrors).length) {
-      formRef.current.elements.namedItem(Object.keys(nextErrors)[0])?.focus()
-      return
-    }
-    savingRef.current = true
-    setSaving(true)
     setSaveError('')
+    if (showFormErrors(validateDisciplinaryActionRules(values, employees), setError, setFocus)) return
+    savingRef.current = true
     try {
       await onSave(values)
       onClose()
@@ -51,18 +44,20 @@ export default function RecordDisciplinaryActionModal({ employees, onSave, onClo
       setSaveError(error.message || 'The record could not be saved. Please try again.')
     } finally {
       savingRef.current = false
-      setSaving(false)
     }
   }
 
   function fieldProps(name) {
     return {
-      name, value: values[name], onChange: (event) => change(name, event.target.value),
+      ...register(name, { onChange: () => {
+        clearErrors(name)
+        setSaveError('')
+      } }), disabled: saving,
       'aria-invalid': !!errors[name], 'aria-describedby': errors[name] ? `discipline-${name}-error` : undefined,
     }
   }
   function fieldError(name) {
-    return errors[name] && <small className="field-error" id={`discipline-${name}-error`}>{errors[name]}</small>
+    return errors[name] && <small className="field-error" id={`discipline-${name}-error`}>{errors[name].message}</small>
   }
 
   if (confirmDiscard) return (
@@ -75,7 +70,7 @@ export default function RecordDisciplinaryActionModal({ employees, onSave, onClo
   return (
     <Modal className="discipline-modal" onClose={close}
       title={<><Icon name="alert-triangle" size={25} /> Record Disciplinary Action</>}>
-      <form ref={formRef} onSubmit={submit} noValidate aria-busy={saving}>
+      <form onSubmit={(event) => handleSubmit(submit)(event)} noValidate aria-busy={saving}>
         <fieldset className="discipline-fields form-grid" disabled={saving}>
           <legend className="sr-only">Disciplinary action details</legend>
           <label>Employee <span>*</span>

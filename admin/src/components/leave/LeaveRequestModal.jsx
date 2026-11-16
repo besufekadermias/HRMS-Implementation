@@ -1,69 +1,73 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useForm, useWatch } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { leaveRequestFormSchema } from '../../utils/validation/operationsSchemas.js'
 import Modal from '../common/Modal.jsx'
 import ConfirmationModal from '../common/ConfirmationModal.jsx'
 import Icon from '../common/Icon.jsx'
 import { countLeaveDays, getLeaveBalance } from '../../services/operations/leaveService.js'
 
 export default function LeaveRequestModal({ request, employees, balances, settings, onSave, onClose, onDirtyChange }) {
-  // Submit only editable inputs, never joined employee data, balances or history.
-  const [values, setValues] = useState({
-    ...(request ? { id: request.id } : {}),
-    employeeId: request?.employeeId || '',
-    startDate: request?.startDate || '',
-    endDate: request?.endDate || '',
-    reason: request?.reason || '',
+  const { register, control, handleSubmit, clearErrors,
+    formState: { errors, isDirty: dirty, isSubmitting: saving },
+  } = useForm({
+    defaultValues: {
+      employeeId: request?.employeeId || '', startDate: request?.startDate || '',
+      endDate: request?.endDate || '', reason: request?.reason || '',
+    },
+    resolver: zodResolver(leaveRequestFormSchema, undefined, { raw: true }),
   })
-  const [dirty, setDirty] = useState(false)
-  const [discard, setDiscard] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
-  const submitting = useRef(false)
+  const values = useWatch({ control })
   const days = countLeaveDays(values.startDate, values.endDate, settings.dayCounting)
   const balance = getLeaveBalance(balances.find((item) => item.employeeId === values.employeeId))
+  const [discard, setDiscard] = useState(false)
+  const [error, setErrorMessage] = useState('')
+  const submitting = useRef(false)
 
-  function change(name, value) {
-    setValues((current) => ({ ...current, [name]: value }))
-    setError('')
-    setDirty(true)
-    onDirtyChange(true)
+  useEffect(() => { onDirtyChange(dirty) }, [dirty, onDirtyChange])
+
+  function fieldProps(name) {
+    return { ...register(name, { onChange: () => { clearErrors(name); setErrorMessage('') } }),
+      'aria-invalid': !!errors[name], 'aria-describedby': errors[name] ? `leave-${name}-error` : undefined }
   }
+  function fieldError(name) {
+    return errors[name] && <small className="field-error" id={`leave-${name}-error`}>{errors[name].message}</small>
+  }
+
   function close() {
-    if (submitting.current) return
+    if (saving || submitting.current) return
     if (dirty) setDiscard(true)
     else onClose()
   }
-  async function submit(event) {
-    event.preventDefault()
+  async function submit(values) {
     if (submitting.current) return
+    setErrorMessage('')
     submitting.current = true
-    setSaving(true)
-    setError('')
     try {
-      await onSave(values)
+      await onSave({ ...values, ...(request ? { id: request.id } : {}) })
       onClose()
     } catch (error) {
-      setError(error?.message || 'The request could not be saved.')
+      setErrorMessage(error?.message || 'The request could not be saved.')
     } finally {
       submitting.current = false
-      setSaving(false)
     }
   }
   if (discard) return <ConfirmationModal title="Discard request changes?" confirmLabel="Discard Changes"
     onCancel={() => setDiscard(false)} onConfirm={onClose}><p>Your request changes have not been saved.</p></ConfirmationModal>
 
   return <Modal title={request ? 'Edit Leave Request' : 'New Leave Request'} subtitle="Record a request on behalf of an employee" onClose={close}>
-    <form onSubmit={submit} noValidate aria-busy={saving}>
+    <form onSubmit={(event) => handleSubmit(submit)(event)} noValidate aria-busy={saving}>
       <fieldset className="leave-form-fieldset" disabled={saving}>
         <div className="employee-fields-grid leave-form-grid">
           <label className="full-width">Employee <span>*</span>
-            <select value={values.employeeId} required disabled={!!request} onChange={(event) => change('employeeId', event.target.value)}>
+            <select {...fieldProps('employeeId')} required disabled={!!request}>
               <option value="">Select an employee</option>
               {employees.map((employee) => <option key={employee.id} value={employee.id}>{employee.name} · {employee.id}</option>)}
-            </select>
+            </select>{fieldError('employeeId')}
           </label>
-          <label>Start date <span>*</span><input type="date" value={values.startDate} required onChange={(event) => change('startDate', event.target.value)} /></label>
-          <label>End date <span>*</span><input type="date" value={values.endDate} required min={values.startDate || undefined} onChange={(event) => change('endDate', event.target.value)} /></label>
-          <label className="full-width">Reason <span>*</span><textarea rows={3} value={values.reason} required maxLength={1000} onChange={(event) => change('reason', event.target.value)} /></label>
+          <label>Start date <span>*</span><input type="date" {...fieldProps('startDate')} required />{fieldError('startDate')}</label>
+          <label>End date <span>*</span><input type="date" {...fieldProps('endDate')} required min={values.startDate || undefined} />{fieldError('endDate')}</label>
+          <label className="full-width">Reason <span>*</span><textarea rows={3} {...fieldProps('reason')} required maxLength={1000} />{fieldError('reason')}</label>
         </div>
       </fieldset>
       <div className="leave-request-preview" role="status">

@@ -1,15 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
+import { useAdminStore } from '../../store/index.js'
 import leaveApi, { validateLeaveResponse } from '../../services/operations/leaveApi.js'
 import { getLeaveYear, needsLeaveRefresh } from '../../services/operations/leaveYear.js'
 
 // Pages receive data and save callbacks. Only the data service knows how to load/save.
 export default function useLeave(employees, { enabled = true, api = leaveApi } = {}) {
-  const [data, setData] = useState(null)
+  const data = useAdminStore(state => state.leaveData)
+  const setData = useAdminStore(state => state.setLeaveData)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [saving, setSaving] = useState(false)
   const [loadVersion, setLoadVersion] = useState(0)
-  const currentData = useRef(null)
+  const currentData = useRef(data)
   const savingRef = useRef(false)
   const employeeRenames = useRef([])
 
@@ -37,7 +39,7 @@ export default function useLeave(employees, { enabled = true, api = leaveApi } =
     return () => {
       cancelled = true
     }
-  }, [api, enabled, loadVersion])
+  }, [api, enabled, loadVersion, setData])
 
   useEffect(() => {
     if (!enabled || loading) return undefined
@@ -82,7 +84,7 @@ export default function useLeave(employees, { enabled = true, api = leaveApi } =
       window.removeEventListener('focus', refreshYear)
       document.removeEventListener('visibilitychange', refreshYear)
     }
-  }, [api, enabled, employees, loading])
+  }, [api, enabled, employees, loading, setData])
 
   async function save(method, input) {
     if (savingRef.current) throw new Error('A leave change is already being saved.')

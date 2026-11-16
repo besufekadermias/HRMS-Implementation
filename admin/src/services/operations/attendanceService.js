@@ -1,3 +1,5 @@
+import { attendanceSettingsSchema } from '../../utils/validation/operationsSchemas.js';
+import { fieldErrors } from '../../utils/validation/schemaHelpers.js';
 import {
   ATTENDANCE_STATUSES,
   ATTENDANCE_TIME_ZONE,
@@ -269,43 +271,26 @@ function normalizeIpAddress(address) {
 }
 
 export function validateAttendanceSettings(values) {
-  const errors = {};
-  const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
-  if (!timePattern.test(values.startTime))
-    errors.startTime = "Enter a valid start time.";
-  if (!timePattern.test(values.endTime))
-    errors.endTime = "Enter a valid end time.";
-  if (
-    !errors.startTime &&
-    !errors.endTime &&
-    values.endTime <= values.startTime
-  ) {
-    errors.endTime =
-      "End time must be after start time for this daily schedule.";
-  }
+  return validateAttendanceSettingsRules(values, fieldErrors(attendanceSettingsSchema, values));
+}
 
-  const grace = Number(values.gracePeriod);
-  if (
-    !/^\d+$/.test(values.gracePeriod) ||
-    !Number.isInteger(grace) ||
-    grace < 0 ||
-    grace > 1439
-  ) {
-    errors.gracePeriod = "Enter a whole number of minutes from 0 to 1439.";
-  } else if (!errors.startTime && !errors.endTime) {
-    const [startHour, startMinute] = values.startTime.split(":").map(Number);
-    const [endHour, endMinute] = values.endTime.split(":").map(Number);
-    if (grace >= (endHour - startHour) * 60 + endMinute - startMinute) {
-      errors.gracePeriod = "Grace period must be shorter than the working day.";
-    }
+// These schedule and IP checks are shared by the form and saved-data validation.
+export function validateAttendanceSettingsRules(values, errors = {}) {
+  if (!values || typeof values !== 'object') return errors;
+  if (!errors.startTime && !errors.endTime && values.endTime <= values.startTime)
+    errors.endTime = 'End time must be after start time for this daily schedule.';
+  if (!errors.gracePeriod && !errors.startTime && !errors.endTime) {
+    const [startHour, startMinute] = values.startTime.split(':').map(Number);
+    const [endHour, endMinute] = values.endTime.split(':').map(Number);
+    if (Number(values.gracePeriod) >= (endHour - startHour) * 60 + endMinute - startMinute)
+      errors.gracePeriod = 'Grace period must be shorter than the working day.';
   }
-
-  const addresses = splitIpAddresses(values.allowedIps).map(normalizeIpAddress);
-  if (addresses.includes(null)) {
-    errors.allowedIps =
-      "Enter valid IPv4 or IPv6 addresses, separated by commas or new lines. URLs and subnet ranges are not supported.";
-  } else if (new Set(addresses).size !== addresses.length) {
-    errors.allowedIps = "Remove duplicate IP addresses.";
+  if (!errors.allowedIps) {
+    const addresses = splitIpAddresses(values.allowedIps).map(normalizeIpAddress);
+    if (addresses.includes(null))
+      errors.allowedIps = 'Enter valid IPv4 or IPv6 addresses, separated by commas or new lines. URLs and subnet ranges are not supported.';
+    else if (new Set(addresses).size !== addresses.length)
+      errors.allowedIps = 'Remove duplicate IP addresses.';
   }
   return errors;
 }

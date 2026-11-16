@@ -1,62 +1,77 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useForm, useWatch } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { getServiceSchema } from '../../utils/validation/communicationsSchemas.js'
+import { showFormErrors } from '../../utils/validation/formErrors.js'
 import Modal from '../common/Modal.jsx'
 import ConfirmationModal from '../common/ConfirmationModal.jsx'
 import Icon from '../common/Icon.jsx'
-import { EMPTY_SERVICE, SERVICE_TYPES, validateService } from '../../services/communications/publicServiceService.js'
+import { EMPTY_SERVICE, SERVICE_TYPES, validateServiceRules } from '../../services/communications/publicServiceService.js'
 
 export default function ServiceFormModal({ service, onSave, onClose, onDirtyChange }) {
   const [initial] = useState(() => ({ ...EMPTY_SERVICE, ...service }))
-  const [values, setValues] = useState(initial)
-  const [errors, setErrors] = useState({})
+  const { register, control, handleSubmit, setError, clearErrors,
+    formState: { errors, isDirty, isSubmitting: saving },
+  } = useForm({
+    defaultValues: initial,
+    resolver: (values, context, options) => zodResolver(getServiceSchema(values.type), undefined, { raw: true })(values, context, options),
+    shouldFocusError: false,
+  })
+  const values = useWatch({ control })
   const [saveError, setSaveError] = useState('')
   const [discarding, setDiscarding] = useState(false)
+  const savingRef = useRef(false)
   const formRef = useRef(null)
-  const dirty = Object.keys(EMPTY_SERVICE).some((key) => values[key] !== initial[key])
+  const dirty = isDirty
 
-  function change(name, value) {
-    const next = { ...values, [name]: value }
-    setValues(next)
-    setErrors({})
-    setSaveError('')
-    onDirtyChange(Object.keys(EMPTY_SERVICE).some((key) => next[key] !== initial[key]))
+  useEffect(() => { onDirtyChange(dirty) }, [dirty, onDirtyChange])
+
+  function focusField(name) {
+    const field = formRef.current?.querySelector(`[name="${name}"]`)
+    const details = field?.closest('details')
+    if (details) details.open = true
+    field?.focus()
+  }
+  function invalid(nextErrors) {
+    focusField(Object.keys(nextErrors)[0])
   }
 
   function close() {
+    if (saving || savingRef.current) return
     if (dirty) setDiscarding(true)
     else onClose()
   }
 
-  function submit(event) {
-    event.preventDefault()
-    const nextErrors = validateService(values)
-    setErrors(nextErrors)
-    if (Object.keys(nextErrors).length) {
-      const field = formRef.current.elements.namedItem(Object.keys(nextErrors)[0])
-      const details = field?.closest('details')
-      if (details) details.open = true
-      field?.focus()
-      return
-    }
+  async function submit(values) {
+    if (savingRef.current) return
+    setSaveError('')
+    if (showFormErrors(validateServiceRules(values), setError, focusField)) return
+    savingRef.current = true
     try {
-      onSave(values)
+      await onSave(values)
       onClose()
     } catch (error) {
       setSaveError(error.message || 'The service could not be saved. Please try again.')
+    } finally {
+      savingRef.current = false
     }
   }
 
   function fieldProps(name) {
     return {
-      name, value: values[name], onChange: (event) => change(name, event.target.value),
+      ...register(name, { onChange: () => {
+        clearErrors(name)
+        setSaveError('')
+      } }), disabled: saving,
       'aria-invalid': !!errors[name], 'aria-describedby': errors[name] ? `service-${name}-error` : undefined,
     }
   }
   function fieldError(name) {
-    return errors[name] && <small className="field-error" id={`service-${name}-error`}>{errors[name]}</small>
+    return errors[name] && <small className="field-error" id={`service-${name}-error`}>{errors[name].message}</small>
   }
 
   return <><Modal className="service-modal" title={<><Icon name="globe" size={24} />{service ? 'Edit Service' : 'Add Service'}</>} onClose={close}>
-    <form ref={formRef} onSubmit={submit} noValidate>
+    <form ref={formRef} onSubmit={(event) => handleSubmit(submit, invalid)(event)} noValidate aria-busy={saving}>
       <div className="form-grid service-fields">
         <label className="full-width">Service name <span>*</span>
           <input {...fieldProps('title')} maxLength={150} placeholder="e.g. Digital skills training" required />
@@ -107,8 +122,8 @@ export default function ServiceFormModal({ service, onSave, onClose, onDirtyChan
       </details>
       {saveError && <p className="form-error" role="alert">{saveError}</p>}
       <div className="modal-actions">
-        <button type="button" className="button button-secondary" onClick={close}>Cancel</button>
-        <button type="submit" className="button button-primary">{values.status === 'DRAFT' ? 'Save Draft' : 'Save & Publish'}</button>
+        <button type="button" className="button button-secondary" onClick={close} disabled={saving}>Cancel</button>
+        <button type="submit" className="button button-primary" disabled={saving}>{values.status === 'DRAFT' ? 'Save Draft' : 'Save & Publish'}</button>
       </div>
     </form>
   </Modal>

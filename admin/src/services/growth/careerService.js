@@ -1,14 +1,8 @@
-import {
-  isValidDate,
-  todayInNairobi,
-} from "../../utils/validation/validators.js";
+import { MILESTONE_TYPES, careerMilestoneSchema } from '../../utils/validation/growthSchemas.js';
+import { fieldErrors } from '../../utils/validation/schemaHelpers.js';
+import { todayInNairobi } from "../../utils/validation/validators.js";
 
-export const MILESTONE_TYPES = [
-  { value: "PROMOTION", label: "Promotion" },
-  { value: "STEP_INCREMENT", label: "Step Increment" },
-  { value: "GRADE_CHANGE", label: "Grade Change" },
-  { value: "AWARD_MILESTONE", label: "Award Milestone" },
-];
+export { MILESTONE_TYPES };
 
 // Historical example from careertracking.png; already reflected in the roster.
 export const INITIAL_CAREER_MILESTONES = [
@@ -88,7 +82,11 @@ export function validateCareerMilestone(
   grades,
   today = todayInNairobi(),
 ) {
-  const errors = {};
+  return validateCareerMilestoneRules(values, milestones, employees, grades, today, fieldErrors(careerMilestoneSchema, values));
+}
+
+export function validateCareerMilestoneRules(values, milestones, employees, grades, today = todayInNairobi(), errors = {}) {
+  if (!values || typeof values !== 'object') return errors;
   const { employee, previousGrade, newGrade, historical } = careerChangeContext(
     values,
     milestones,
@@ -98,17 +96,6 @@ export function validateCareerMilestone(
   );
   if (!employee)
     errors.employeeId = "Select an employee from the current staff list.";
-  if (!MILESTONE_TYPES.some((type) => type.value === values.milestoneType)) {
-    errors.milestoneType = "Select a milestone type.";
-  }
-  if (
-    !isValidDate(values.effectiveDate) ||
-    values.effectiveDate < "1900-01-01" ||
-    values.effectiveDate > "2100-12-31"
-  ) {
-    errors.effectiveDate =
-      "Enter a valid effective date between 1900 and 2100.";
-  }
   if (values.previousGradeId && !previousGrade)
     errors.previousGradeId = "Select an available previous grade.";
   if (
@@ -160,9 +147,6 @@ export function validateCareerMilestone(
       errors.newGradeId =
         "The configured salary changed. Reselect the new grade to review it.";
     }
-  }
-  if (!values.description?.trim() || values.description.trim().length > 5000) {
-    errors.description = "Enter a justification of 1–5,000 characters.";
   }
   return errors;
 }

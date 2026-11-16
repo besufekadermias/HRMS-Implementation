@@ -1,14 +1,8 @@
-import {
-  isValidDate,
-  todayInNairobi,
-} from "../../utils/validation/validators.js";
+import { SANCTIONS, disciplinaryActionSchema } from '../../utils/validation/growthSchemas.js';
+import { fieldErrors } from '../../utils/validation/schemaHelpers.js';
+import { todayInNairobi } from "../../utils/validation/validators.js";
 
-export const SANCTIONS = [
-  { value: "WARNING", label: "Warning" },
-  { value: "FINE", label: "Fine" },
-  { value: "SUSPENSION", label: "Suspension" },
-  { value: "TERMINATION", label: "Termination" },
-];
+export { SANCTIONS };
 
 // Neutral demo incident; the reference supplies the layout, not verified allegations.
 export const INITIAL_DISCIPLINE = {
@@ -27,26 +21,15 @@ export const INITIAL_DISCIPLINE = {
   history: [],
 };
 
-export function validateDisciplinaryAction(
-  values,
-  employees,
-  today = todayInNairobi(),
-) {
-  const errors = {};
-  if (!employees.some((employee) => employee.id === values.employeeId))
-    errors.employeeId = "Select an employee from the current staff list.";
-  if (
-    !isValidDate(values.incidentDate) ||
-    values.incidentDate < "1900-01-01" ||
-    values.incidentDate > today
-  )
-    errors.incidentDate = "Enter a valid incident date on or before today.";
-  if (!values.violationType?.trim() || values.violationType.trim().length > 100)
-    errors.violationType = "Enter a violation type of 1–100 characters.";
-  if (!SANCTIONS.some((sanction) => sanction.value === values.penaltyAction))
-    errors.penaltyAction = "Select a sanction or penalty action.";
-  if ((values.description || "").length > 5000)
-    errors.description = "Keep the explanation within 5,000 characters.";
+export function validateDisciplinaryAction(values, employees, today = todayInNairobi()) {
+  return validateDisciplinaryActionRules(values, employees, today, fieldErrors(disciplinaryActionSchema, values));
+}
+
+export function validateDisciplinaryActionRules(values, employees, today = todayInNairobi(), errors = {}) {
+  if (!employees.some(employee => employee.id === values?.employeeId))
+    errors.employeeId = 'Select an employee from the current staff list.';
+  if (!errors.incidentDate && values.incidentDate > today)
+    errors.incidentDate = 'Enter a valid incident date on or before today.';
   return errors;
 }
 

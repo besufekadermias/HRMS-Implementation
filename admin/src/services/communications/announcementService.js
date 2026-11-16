@@ -1,3 +1,5 @@
+import { announcementSchema } from '../../utils/validation/communicationsSchemas.js';
+import { fieldErrors } from '../../utils/validation/schemaHelpers.js';
 import { todayInNairobi } from "../../utils/validation/validators.js";
 import { COMMUNICATION_AUDIENCES, audienceLabel } from "./audiences.js";
 
@@ -40,20 +42,7 @@ export const INITIAL_ANNOUNCEMENTS = [
 ];
 
 export function validateAnnouncement(values) {
-  const errors = {};
-  const title = (values.title || "").trim();
-  const content = (values.content || "").trim();
-  if (!title || title.length > 150)
-    errors.title = "Enter an announcement title of 1–150 characters.";
-  if (
-    !ANNOUNCEMENT_AUDIENCES.some(
-      (audience) => audience.value === values.targetAudience,
-    )
-  )
-    errors.targetAudience = "Select a target audience.";
-  if (!content || content.length > 5000)
-    errors.content = "Enter an announcement body of 1–5,000 characters.";
-  return errors;
+  return fieldErrors(announcementSchema, values);
 }
 
 export function postAnnouncement(records, values) {

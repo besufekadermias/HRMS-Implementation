@@ -1,11 +1,7 @@
-import { isValidDate } from "../../utils/validation/validators.js";
+import { AWARD_CATEGORIES, rewardSchema } from '../../utils/validation/growthSchemas.js';
+import { fieldErrors } from '../../utils/validation/schemaHelpers.js';
 
-export const AWARD_CATEGORIES = [
-  { value: "EXCELLENCE", label: "Excellence" },
-  { value: "INNOVATION", label: "Innovation" },
-  { value: "LONG_SERVICE", label: "Long Service" },
-  { value: "PUNCTUALITY", label: "Punctuality" },
-];
+export { AWARD_CATEGORIES };
 
 // Sample recognition transcribed from Rewwardandrecognations.png.
 export const INITIAL_REWARDS = [
@@ -22,21 +18,12 @@ export const INITIAL_REWARDS = [
 ];
 
 export function validateReward(values, employees) {
-  const errors = {};
-  if (!employees.some((employee) => employee.id === values.employeeId))
-    errors.employeeId = "Select an employee from the current staff list.";
-  if (!values.title?.trim() || values.title.trim().length > 150)
-    errors.title = "Enter an award title of 1–150 characters.";
-  if (!AWARD_CATEGORIES.some((category) => category.value === values.category))
-    errors.category = "Select an award category.";
-  if (
-    !isValidDate(values.awardDate) ||
-    values.awardDate < "1900-01-01" ||
-    values.awardDate > "2100-12-31"
-  )
-    errors.awardDate = "Enter a valid award date between 1900 and 2100.";
-  if ((values.description || "").length > 5000)
-    errors.description = "Keep the description within 5,000 characters.";
+  return validateRewardRules(values, employees, fieldErrors(rewardSchema, values));
+}
+
+export function validateRewardRules(values, employees, errors = {}) {
+  if (!employees.some(employee => employee.id === values?.employeeId))
+    errors.employeeId = 'Select an employee from the current staff list.';
   return errors;
 }
 
