@@ -7,6 +7,7 @@
     "dev": "cd server && npm run dev",
     "start": "cd server && npm start",
     "migrate": "cd server && node src/database/migrate.js",
-    "install:all": "cd server && npm install"
+    "install:all": "cd server && npm install",
+    "dev:admin": "npm --prefix admin run dev"
   }
 }
