@@ -1,4 +1,5 @@
-import Modal from './Modal.jsx'
+import Button from './Button.jsx'
+import Modal, { ModalActions } from './Modal.jsx'
 import Icon from './Icon.jsx'
 
 export default function ConfirmationModal({
@@ -11,24 +12,23 @@ export default function ConfirmationModal({
 }) {
   return (
     <Modal title={title} onClose={onCancel}>
-      <div className="confirmation-copy">{children}</div>
-      <div className="modal-actions">
-        <button
+      <div className="tw:text-text-secondary tw:text-[14px] tw:leading-[1.8]">{children}</div>
+      <ModalActions >
+        <Button variant="secondary"
           type="button"
-          className="button button-secondary"
           onClick={onCancel}
         >
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
-          className={`button ${destructive ? 'button-danger' : 'button-primary'}`}
+          variant={destructive ? 'danger' : 'primary'}
           onClick={onConfirm}
         >
           {destructive && <Icon name="trash" size={17} />}
           {confirmLabel}
-        </button>
-      </div>
+        </Button>
+      </ModalActions>
     </Modal>
   )
 }

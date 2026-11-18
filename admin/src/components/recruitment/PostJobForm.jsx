@@ -1,9 +1,11 @@
+import Button from '../common/Button.jsx'
+import { FormInput, FormSelect, FormTextarea } from '../common/FormFields.jsx'
 import { useEffect, useRef, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { jobFormSchema } from '../../utils/validation/recruitmentSchema.js'
 import { showFormErrors } from '../../utils/validation/formErrors.js'
-import Modal from '../common/Modal.jsx'
+import Modal, { ModalActions } from '../common/Modal.jsx'
 import ConfirmationModal from '../common/ConfirmationModal.jsx'
 import { JOB_STATUSES, validateJobRules } from '../../services/recruitment/recruitmentService.js'
 
@@ -58,7 +60,8 @@ export default function PostJobForm({ job, departments, onSave, onClose, onDirty
     }
   }
   function fieldError(name) {
-    return errors[name] && <small className="field-error" id={`job-${name}-error`}>{errors[name].message}</small>
+    return errors[name] && <small className="recruitment-field-error tw:block tw:text-[11px] tw:font-normal tw:text-[#b33450] tw:mt-[7px] tw:leading-[1.6]
+          tw:normal-case tw:tracking-normal" id={`job-${name}-error`}>{errors[name].message}</small>
   }
 
   if (discarding) return <ConfirmationModal title="Discard vacancy changes?" confirmLabel="Discard changes"
@@ -66,45 +69,54 @@ export default function PostJobForm({ job, departments, onSave, onClose, onDirty
     <p>Your vacancy has unsaved changes. Close this form and discard them?</p>
   </ConfirmationModal>
 
-  return <Modal className="recruitment-modal" title={job ? 'Edit Job Vacancy' : 'Create New Job Vacancy'} onClose={close}>
+  return <Modal size="medium" className="recruitment-modal" title={job ? 'Edit Job Vacancy' : 'Create New Job Vacancy'} onClose={close}>
     <form onSubmit={(event) => handleSubmit(submit)(event)} noValidate aria-busy={saving}>
-      <div className="form-grid recruitment-fields">
-        <label className="recruitment-wide">Job title <span>*</span>
-          <input {...fieldProps('title')} placeholder="e.g. Senior Network Infrastructure Engineer" maxLength={100} required />
+      <div className="recruitment-fields tw:grid tw:grid-cols-[repeat(2,minmax(0,1fr))] tw:gap-[22px_18px] tw:[&_label]:block
+          tw:[&_label]:text-[12px] tw:[&_label]:font-[600] tw:[&_label]:text-text-secondary tw:[&_label]:uppercase
+          tw:[&_label]:tracking-[0.5px] tw:[&_label>span]:text-[#c75560] tw:[&_input]:min-h-[44px]
+          tw:[&_input]:rounded-[10px] tw:[&_input]:normal-case tw:[&_input]:tracking-normal
+          tw:[&_select]:min-h-[44px] tw:[&_select]:rounded-[10px] tw:[&_select]:normal-case
+          tw:[&_select]:tracking-normal tw:[&_textarea]:min-h-[140px] tw:[&_textarea]:rounded-[10px]
+          tw:[&_textarea]:normal-case tw:[&_textarea]:tracking-normal tw:[&_textarea]:resize-y
+          tw:[&_[aria-invalid=true]]:border-[#b42344] tw:[@media(width<=700px)]:grid-cols-[minmax(0,1fr)]">
+        <label className="recruitment-wide tw:col-span-full">Job title <span>*</span>
+          <FormInput {...fieldProps('title')} placeholder="e.g. Senior Network Infrastructure Engineer" maxLength={100} required />
           {fieldError('title')}
         </label>
-        <label className="recruitment-wide">Department <span>*</span>
-          <select {...fieldProps('departmentId')} required>
+        <label className="recruitment-wide tw:col-span-full">Department <span>*</span>
+          <FormSelect {...fieldProps('departmentId')} required>
             <option value="">Select Department</option>
             {initial.departmentId && !activeDepartments.some((item) => String(item.id) === initial.departmentId)
               && <option value={initial.departmentId} disabled>Department unavailable — choose an active department</option>}
             {activeDepartments.map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}
-          </select>
+          </FormSelect>
           {fieldError('departmentId')}
         </label>
         <label>Application deadline <span>*</span>
-          <input {...fieldProps('deadline')} type="date" min="1900-01-01" max="2100-12-31" required />
+          <FormInput {...fieldProps('deadline')} type="date" min="1900-01-01" max="2100-12-31" required />
           {fieldError('deadline')}
         </label>
         <label>Status <span>*</span>
-          <select {...fieldProps('status')} required>
+          <FormSelect {...fieldProps('status')} required>
             {JOB_STATUSES.map((status) => <option key={status}>{status}</option>)}
-          </select>
+          </FormSelect>
           {fieldError('status')}
         </label>
-        <label className="recruitment-wide">Job description &amp; responsibilities <span>*</span>
-          <textarea {...fieldProps('description')} placeholder="Detailed requirements, duties, qualifications…" rows={5} maxLength={5000} required />
+        <label className="recruitment-wide tw:col-span-full">Job description &amp; responsibilities <span>*</span>
+          <FormTextarea {...fieldProps('description')} placeholder="Detailed requirements, duties, qualifications…" rows={5} maxLength={5000} required />
           {fieldError('description')}
         </label>
       </div>
-      {saveError && <p className="form-error" role="alert">{saveError}</p>}
-      {!activeDepartments.length && <p className="form-error" role="alert">Add an active department before posting a vacancy.</p>}
-      <div className="modal-actions">
-        <button type="button" className="button button-secondary" onClick={close} disabled={saving}>Cancel</button>
-        <button type="submit" className="button button-primary" disabled={saving || !activeDepartments.length}>
+      {saveError && <p className="recruitment-form-error tw:mt-[16px] tw:text-[13px] tw:rounded-[5px] tw:p-[10px_12px] tw:leading-[1.6]
+          tw:text-[#b42344] tw:bg-[#fff0f3]" role="alert">{saveError}</p>}
+      {!activeDepartments.length && <p className="recruitment-form-error tw:mt-[16px] tw:text-[13px] tw:rounded-[5px] tw:p-[10px_12px] tw:leading-[1.6]
+          tw:text-[#b42344] tw:bg-[#fff0f3]" role="alert">Add an active department before posting a vacancy.</p>}
+      <ModalActions >
+        <Button variant="secondary" type="button" onClick={close} disabled={saving}>Cancel</Button>
+        <Button type="submit" disabled={saving || !activeDepartments.length}>
           {job ? 'Save Changes' : values.status === 'CLOSED' ? 'Save Vacancy' : 'Publish Vacancy'}
-        </button>
-      </div>
+        </Button>
+      </ModalActions>
     </form>
   </Modal>
 }

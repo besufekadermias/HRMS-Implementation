@@ -1,4 +1,5 @@
-import Modal from '../common/Modal.jsx'
+import Button from '../common/Button.jsx'
+import Modal, { ModalActions } from '../common/Modal.jsx'
 import Icon from '../common/Icon.jsx'
 import PayrollStatus from './PayrollStatus.jsx'
 import {
@@ -17,8 +18,9 @@ export default function PayslipModal({ run, employee, onClose }) {
       subtitle={`${monthLabel(run.month)} · ${employee.employeeId}`}
       onClose={onClose}
     >
-      <div className="payroll-slip-person">
-        <span className="icon-circle">
+      <div className="payroll-slip-person tw:flex tw:items-center tw:gap-[14px] tw:p-[6px_0_20px] tw:flex-wrap tw:[&>div]:flex-1
+          tw:[&_p]:mt-[5px] tw:[&_p]:text-[#6e8c99] tw:[&_p]:text-[12px]">
+        <span className="payroll-icon tw:inline-flex tw:items-center tw:justify-center tw:shrink-0 tw:rounded-full tw:w-[46px] tw:h-[46px]">
           <Icon name="users" size={25} />
         </span>
         <div>
@@ -27,7 +29,10 @@ export default function PayslipModal({ run, employee, onClose }) {
         </div>
         <PayrollStatus status={run.status} />
       </div>
-      <dl className="payroll-summary-list">
+      <dl className="payroll-summary-list tw:m-0 tw:p-[10px_22px] tw:[&>div]:flex tw:[&>div]:justify-between tw:[&>div]:gap-[16px]
+            tw:[&>div]:p-[15px_0] tw:[&>div]:[border-bottom:1px_solid_#eaf2f4] tw:[&_dt]:text-[#587c8a]
+            tw:[&_dt]:text-[12px] tw:[&_dd]:m-0 tw:[&_dd]:text-[#234f60] tw:[&_dd]:font-[600]
+            tw:[&_dd]:tabular-nums tw:[&_dd]:text-right">
         {[
           ['Gross salary', employee.gross],
           [tax.name, employee.incomeTax],
@@ -47,22 +52,21 @@ export default function PayslipModal({ run, employee, onClose }) {
           </div>
         ))}
       </dl>
-      <p className="field-hint">
+      <p className="payroll-field-hint tw:block tw:text-[10px] tw:font-normal tw:text-[var(--text-muted)] tw:mt-[7px]">
         Employer pension: {formatCurrency(employee.employerPension)}. This is
         separate from employee deductions.
       </p>
-      <div className="modal-actions">
-        <button className="button button-secondary" onClick={onClose}>
+      <ModalActions >
+        <Button variant="secondary" onClick={onClose}>
           Close
-        </button>
-        <button
-          className="button button-primary"
+        </Button>
+        <Button
           onClick={() => printPayroll(run, employee)}
         >
           <Icon name="print" size={17} />
           Print / Save PDF
-        </button>
-      </div>
+        </Button>
+      </ModalActions>
     </Modal>
   )
 }

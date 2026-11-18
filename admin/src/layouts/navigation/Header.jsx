@@ -1,3 +1,4 @@
+import { IconButton } from '../../components/common/Button.jsx'
 import { useEffect, useRef, useState } from 'react'
 import Icon from '../../components/common/Icon.jsx'
 import AdminProfileDropdown from '../dropdowns/AdminProfileDropdown.jsx'
@@ -49,22 +50,30 @@ export default function Header({
   }
 
   return (
-    <header className="header">
-      <button
+    <header className="header tw:h-[var(--header-height)] tw:flex tw:items-center tw:justify-between tw:gap-5 tw:py-0 tw:px-[30px]
+          tw:[border-bottom:1px_solid_var(--border)] tw:bg-white tw:sticky tw:top-0 tw:z-20
+          tw:max-[1280px]:px-[22px] tw:max-[1024px]:gap-3 tw:max-[768px]:px-[15px] tw:max-[768px]:gap-2">
+      <IconButton variant="menu"
         type="button"
-        className="icon-button mobile-menu-button"
         onClick={onMenu}
         aria-label="Open navigation"
       >
         <Icon name="menu" />
-      </button>
+      </IconButton>
       {['attendance-settings', 'leave-settings'].includes(activePage) ? (
-        <div className="attendance-header-title"><Icon name="shield" size={19} /> {activePage === 'leave-settings' ? 'Leave Settings' : 'Attendance Settings'}</div>
-      ) : <div className="search-box">
-        <span className="search-icon">
+        <div className="attendance-header-title tw:flex tw:items-center tw:flex-1 tw:gap-[9px] tw:text-text-secondary tw:text-[13px]
+          tw:font-semibold"><Icon name="shield" size={19} /> {activePage === 'leave-settings' ? 'Leave Settings' : 'Attendance Settings'}</div>
+      ) : <div className="search-box tw:flex tw:items-center tw:w-[min(48%,532px)] tw:h-[41px] tw:rounded-[24px] tw:bg-[var(--search-bg)]
+          tw:[padding:4px_14px_4px_5px] tw:border tw:border-solid tw:border-[#eff4f8] tw:gap-[10px]
+          tw:focus-within:border-[#a3d2c8] tw:focus-within:[box-shadow:0_0_0_3px_#dff2ed80] tw:max-[1024px]:mr-auto
+          tw:max-[1024px]:w-[min(50%,532px)] tw:max-[768px]:w-full tw:max-[768px]:max-w-none
+          tw:max-[768px]:gap-[5px] tw:max-[768px]:pr-2">
+        <span className="search-icon tw:inline-flex tw:items-center tw:justify-center tw:bg-white tw:text-[#7091a3] tw:rounded-[50%]
+          tw:size-[31px] tw:shrink-0 tw:max-[768px]:size-[27px]">
           <Icon name="search" size={19} />
         </span>
-        <input
+        <input className="tw:bg-transparent tw:[border:0] tw:[outline:none] tw:min-w-0 tw:w-full tw:text-[11px] tw:text-text-primary
+          tw:placeholder:text-[#6d889e]"
           type="search"
           value={search}
           onChange={(event) => onSearch(event.target.value)}
@@ -136,14 +145,15 @@ export default function Header({
                     : undefined
           }
         />
-        <kbd>/</kbd>
+        <kbd className="tw:py-px tw:px-[5px] tw:text-[#7891a2] tw:bg-[#fff9] tw:border tw:border-solid tw:border-[#e0e9f0] tw:rounded-[4px]
+          tw:text-[10px] tw:max-[768px]:hidden">/</kbd>
       </div>}
-      <div className="header-controls" ref={menuRef}>
-        <div className="dropdown-anchor">
-          <button
+      <div className="header-controls tw:flex tw:items-center tw:gap-4 tw:shrink-0 tw:min-[1024px]:max-[1280px]:gap-[9px]
+          tw:max-[768px]:gap-[6px]" ref={menuRef}>
+        <div className="dropdown-anchor tw:relative">
+          <IconButton notification
             type="button"
             ref={notificationRef}
-            className="icon-button notification-button"
             aria-label="Notifications"
             aria-expanded={menu === 'notifications'}
             aria-controls="notification-dropdown"
@@ -152,8 +162,9 @@ export default function Header({
             }
           >
             <Icon name="bell" size={22} />
-            {announcementCount > 0 && <span className="notification-dot" />}
-          </button>
+            {announcementCount > 0 && <span className="notification-dot tw:absolute tw:right-[7px] tw:top-[6px] tw:bg-[#ef5272] tw:size-[7px]
+          tw:[border:1.5px_solid_white] tw:rounded-[50%]" />}
+          </IconButton>
           {menu === 'notifications' && (
             <NotificationsDropdown
               count={announcementCount}
@@ -161,23 +172,30 @@ export default function Header({
             />
           )}
         </div>
-        <span className="header-divider" />
-        <div className="dropdown-anchor">
+        <span className="header-divider tw:w-px tw:h-7 tw:bg-[var(--divider)] tw:max-[768px]:hidden" />
+        <div className="dropdown-anchor tw:relative">
           <button
             type="button"
             ref={profileRef}
-            className="profile-button"
+            className="profile-button tw:flex tw:items-center tw:gap-[10px] tw:py-1 tw:px-0 tw:[background:none] tw:[border:0]
+          tw:rounded-md tw:max-[768px]:gap-[3px]"
             aria-label="Open HR Manager profile"
             aria-expanded={menu === 'profile'}
             aria-controls="profile-dropdown"
             onClick={() => setMenu(menu === 'profile' ? null : 'profile')}
           >
-            <span className="avatar">B</span>
-            <span className="profile-text">
-              <strong>Besufekad Ermias</strong>
-              <small>HR Manager</small>
+            <span className="avatar tw:inline-flex tw:shrink-0 tw:items-center tw:justify-center tw:rounded-[50%] tw:font-semibold
+          tw:size-[39px] tw:text-[#206c62] tw:[background:linear-gradient(140deg,#e3f4ee,#c9e7e0)]
+          tw:[border:3px_solid_white] tw:text-[16px] tw:max-[768px]:size-[35px] tw:shared-base:inline-flex
+          tw:shared-base:shrink-0 tw:shared-base:items-center tw:shared-base:justify-center tw:shared-base:w-[39px]
+          tw:shared-base:h-[39px] tw:shared-base:rounded-[50%] tw:shared-base:[color:#206c62]
+          tw:shared-base:[background:linear-gradient(140deg,_#e3f4ee,_#c9e7e0)]
+          tw:shared-base:[border:3px_solid_white] tw:shared-base:text-[16px] tw:shared-base:font-semibold">B</span>
+            <span className="profile-text tw:text-left tw:[margin:0_13px_0_0] tw:min-[1024px]:max-[1280px]:mr-1 tw:max-[768px]:hidden">
+              <strong className="tw:block tw:font-semibold tw:text-[11px]">Besufekad Ermias</strong>
+              <small className="tw:block tw:text-[11px] tw:mt-1 tw:text-text-secondary">HR Manager</small>
             </span>
-            <Icon name="chevron-down" size={16} />
+            <Icon className="tw:text-[var(--text-muted)] tw:max-[768px]:hidden" name="chevron-down" size={16} />
           </button>
           {menu === 'profile' && <AdminProfileDropdown onNavigate={navigate} />}
         </div>

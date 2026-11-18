@@ -1,7 +1,9 @@
+import Button from '../common/Button.jsx'
+import { FormInput, FormSelect, FormTextarea } from '../common/FormFields.jsx'
 import { useEffect, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import Modal from '../common/Modal.jsx'
+import Modal, { ModalActions } from '../common/Modal.jsx'
 import ConfirmationModal from '../common/ConfirmationModal.jsx'
 import Icon from '../common/Icon.jsx'
 import { validateDepartmentRules } from '../../utils/validation/validators.js'
@@ -87,10 +89,24 @@ export default function DepartmentModal({
         noValidate
         aria-busy={isSubmitting}
       >
-        <div className="employee-fields-grid department-fields-grid">
-          <label className="full-width">
+        <div className="employee-fields-grid department-fields-grid tw:grid-cols-2 tw:gap-[18px] tw:max-[640px]:grid-cols-[minmax(0,_1fr)]
+          tw:[&_textarea]:h-auto tw:[&_textarea]:min-h-[90px] tw:[&_textarea]:resize-y
+          tw:max-[640px]:[&_input]:text-[16px] tw:max-[640px]:[&_select]:text-[16px]
+          tw:max-[640px]:[&_textarea]:text-[16px] tw:shared-base:grid
+          tw:shared-base:grid-cols-[repeat(3,_minmax(0,_1fr))] tw:shared-base:gap-[23px_22px]
+          tw:shared-base:[&_>_label]:block tw:shared-base:[&_>_label]:[color:#48655f]
+          tw:shared-base:[&_>_label]:text-[11px] tw:shared-base:[&_>_label]:font-[650]
+          tw:shared-base:[&_>_label]:leading-[1.5]
+          tw:shared-base:[&_>_label_>_span:not(.password-field)]:[color:#b65265]
+          tw:shared-base:[&_.span-two]:col-[span_2] tw:max-[1100px]:shared-base:gap-[20px_17px]
+          tw:max-[768px]:shared-base:grid-cols-[repeat(2,_minmax(0,_1fr))]
+          tw:max-[768px]:shared-base:[&_.span-two]:col-[1_/_-1]
+          tw:max-[560px]:shared-base:grid-cols-[minmax(0,_1fr)]
+          tw:max-[560px]:shared-base:[&_.span-two]:col-[auto]
+          tw:max-[560px]:shared-base:[&_>_label]:text-[11px]">
+          <label className="full-width tw:shared-base:col-[1_/_-1]">
             Department name <span>*</span>
-            <input
+            <FormInput variant="employee"
               {...register('name')}
               placeholder="e.g. Network & Infrastructure"
               maxLength={120}
@@ -102,14 +118,15 @@ export default function DepartmentModal({
               }
             />
             {errors.name && (
-              <small className="field-error" id="department-name-error">
+              <small className="field-error tw:shared-base:block tw:shared-base:text-[11px] tw:shared-base:font-normal
+          tw:shared-base:[color:#b33450] tw:shared-base:mt-[7px] tw:shared-base:leading-[1.6]" id="department-name-error">
                 {errors.name.message}
               </small>
             )}
           </label>
           <label>
             Department code <span>*</span>
-            <input
+            <FormInput variant="employee"
               {...register('code', { onChange: changeCode })}
               placeholder="e.g. NET"
               maxLength={12}
@@ -121,14 +138,15 @@ export default function DepartmentModal({
               }
             />
             {errors.code && (
-              <small className="field-error" id="department-code-error">
+              <small className="field-error tw:shared-base:block tw:shared-base:text-[11px] tw:shared-base:font-normal
+          tw:shared-base:[color:#b33450] tw:shared-base:mt-[7px] tw:shared-base:leading-[1.6]" id="department-code-error">
                 {errors.code.message}
               </small>
             )}
           </label>
           <label>
             Status <span>*</span>
-            <select
+            <FormSelect variant="employee"
               {...register('status')}
               required
               disabled={isSubmitting}
@@ -136,14 +154,15 @@ export default function DepartmentModal({
             >
               <option>Active</option>
               <option>Inactive</option>
-            </select>
+            </FormSelect>
             {errors.status && (
-              <small className="field-error">{errors.status.message}</small>
+              <small className="field-error tw:shared-base:block tw:shared-base:text-[11px] tw:shared-base:font-normal
+          tw:shared-base:[color:#b33450] tw:shared-base:mt-[7px] tw:shared-base:leading-[1.6]">{errors.status.message}</small>
             )}
           </label>
-          <label className="full-width">
+          <label className="full-width tw:shared-base:col-[1_/_-1]">
             Department head
-            <select
+            <FormSelect variant="employee"
               {...register('headId')}
               disabled={isSubmitting}
               aria-invalid={!!errors.headId}
@@ -155,19 +174,21 @@ export default function DepartmentModal({
                   {employee.name} ({employee.id})
                 </option>
               ))}
-            </select>
-            <small className="field-hint" id="department-head-hint">
+            </FormSelect>
+            <small className="field-hint tw:shared-base:block tw:shared-base:text-[10px] tw:shared-base:font-normal
+          tw:shared-base:[color:var(--text-muted)] tw:shared-base:mt-[7px]" id="department-head-hint">
               {staff.length
                 ? 'Choose a staff member from this department.'
                 : 'Assign employees to this department before choosing a head.'}
             </small>
             {errors.headId && (
-              <small className="field-error">{errors.headId.message}</small>
+              <small className="field-error tw:shared-base:block tw:shared-base:text-[11px] tw:shared-base:font-normal
+          tw:shared-base:[color:#b33450] tw:shared-base:mt-[7px] tw:shared-base:leading-[1.6]">{errors.headId.message}</small>
             )}
           </label>
-          <label className="full-width">
+          <label className="full-width tw:shared-base:col-[1_/_-1]">
             Description
-            <textarea
+            <FormTextarea variant="employee"
               {...register('description')}
               placeholder="Describe this department’s responsibilities"
               maxLength={300}
@@ -176,36 +197,39 @@ export default function DepartmentModal({
               aria-invalid={!!errors.description}
             />
             {errors.description && (
-              <small className="field-error">{errors.description.message}</small>
+              <small className="field-error tw:shared-base:block tw:shared-base:text-[11px] tw:shared-base:font-normal
+          tw:shared-base:[color:#b33450] tw:shared-base:mt-[7px] tw:shared-base:leading-[1.6]">{errors.description.message}</small>
             )}
           </label>
         </div>
         {status === 'Inactive' && (
-          <p className="department-form-note">
+          <p className="department-form-note tw:flex tw:gap-[9px] tw:p-[13px] tw:rounded-[7px] tw:mt-[18px] tw:bg-[#fff7e8]
+          tw:text-[#805f23] tw:text-[12px] tw:leading-[1.6]">
             <Icon name="info" size={17} />
             Existing staff stay assigned. New employees cannot be placed in an
             inactive department.
           </p>
         )}
         {errors.root && (
-          <p className="form-error" role="alert">
+          <p className="form-error tw:shared-base:mt-[16px] tw:shared-base:text-[13px] tw:shared-base:rounded-[5px]
+          tw:shared-base:p-[10px_12px] tw:shared-base:leading-[1.6] tw:shared-base:[color:#b42344]
+          tw:shared-base:[background:#fff0f3]" role="alert">
             {errors.root.message}
           </p>
         )}
-        <div className="modal-actions">
-          <button
+        <ModalActions >
+          <Button variant="secondary"
             type="button"
-            className="button button-secondary"
             onClick={close}
             disabled={isSubmitting}
           >
             Cancel
-          </button>
-          <button type="submit" className="button button-primary" disabled={isSubmitting}>
+          </Button>
+          <Button type="submit" disabled={isSubmitting}>
             <Icon name={department ? 'check' : 'plus'} size={17} />
             {isSubmitting ? 'Saving…' : department ? 'Save Changes' : 'Add Department'}
-          </button>
-        </div>
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   )

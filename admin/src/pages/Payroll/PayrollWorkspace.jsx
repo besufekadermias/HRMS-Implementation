@@ -1,6 +1,7 @@
+import Button, { IconButton } from '../../components/common/Button.jsx'
 import { useState } from 'react'
 import Icon from '../../components/common/Icon.jsx'
-import Modal from '../../components/common/Modal.jsx'
+import Modal, { DialogIntro, ModalActions } from '../../components/common/Modal.jsx'
 import PayrollOverview from './PayrollOverview.jsx'
 import Deductions from './Deductions.jsx'
 import PayrollReports from './PayrollReports.jsx'
@@ -118,21 +119,22 @@ export default function PayrollWorkspace({
   return (
     <>
       {!confirm && error && (
-        <p className="form-error" role="alert">
+        <p className="payroll-form-error tw:mt-[16px] tw:text-[13px] tw:rounded-[5px] tw:p-[10px_12px] tw:leading-[1.6] tw:text-[#b42344]
+          tw:bg-[#fff0f3]" role="alert">
           {error}
         </p>
       )}
       {notice && (
-        <div className="payroll-success" role="status">
+        <div className="payroll-success tw:flex tw:items-center tw:gap-[10px] tw:p-[12px_16px] tw:[border:1px_solid_#c4e9dc]
+          tw:text-[#067e69] tw:bg-[#effcf6] tw:rounded-[9px] tw:mb-[18px] tw:text-[13px] tw:[&_button]:ml-auto" role="status">
           <Icon name="check-circle" size={18} />
           {notice}
-          <button
-            className="icon-button"
+          <IconButton
             aria-label="Dismiss payroll message"
             onClick={() => setNotice('')}
           >
             <Icon name="close" size={16} />
-          </button>
+          </IconButton>
         </div>
       )}
       {content}
@@ -143,39 +145,38 @@ export default function PayrollWorkspace({
           subtitle={monthLabel(month)}
           onClose={closeGenerateDialog}
         >
-          <p className="dialog-intro">
+          <DialogIntro >
             Calculate payroll for active employees and employees on leave who
             were hired by the end of this month. The calculation uses their
             current basic salaries, income tax, pension, and this month’s active
             deductions.
-          </p>
-          <p className="field-hint">
+          </DialogIntro>
+          <p className="payroll-field-hint tw:block tw:text-[10px] tw:font-normal tw:text-[var(--text-muted)] tw:mt-[7px]">
             {run
               ? 'This replaces the generated payroll for this month. Forwarded or paid payroll cannot be changed.'
               : 'This creates a generated payroll and report. Finance handles payment separately.'}
           </p>
           {error && (
-            <p className="form-error" role="alert">
+            <p className="payroll-form-error tw:mt-[16px] tw:text-[13px] tw:rounded-[5px] tw:p-[10px_12px] tw:leading-[1.6] tw:text-[#b42344]
+          tw:bg-[#fff0f3]" role="alert">
               {error}
             </p>
           )}
-          <div className="modal-actions">
-            <button
-              className="button button-secondary"
+          <ModalActions >
+            <Button variant="secondary"
               disabled={generating}
               onClick={closeGenerateDialog}
             >
               Cancel
-            </button>
-            <button
-              className="button button-primary"
+            </Button>
+            <Button
               disabled={generating}
               onClick={generate}
             >
               <Icon name="check" size={17} />
               {generating ? 'Generating…' : 'Confirm Generation'}
-            </button>
-          </div>
+            </Button>
+          </ModalActions>
         </Modal>
       )}
     </>

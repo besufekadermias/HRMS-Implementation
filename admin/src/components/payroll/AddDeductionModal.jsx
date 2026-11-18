@@ -1,8 +1,10 @@
+import Button from '../common/Button.jsx'
+import { FormInput, FormTextarea, FormSelect } from '../common/FormFields.jsx'
 import { useEffect, useRef, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { getDeductionFormSchema } from '../../utils/validation/operationsSchemas.js'
-import Modal from '../common/Modal.jsx'
+import Modal, { ModalActions } from '../common/Modal.jsx'
 import ConfirmationModal from '../common/ConfirmationModal.jsx'
 import Icon from '../common/Icon.jsx'
 import { monthLabel } from '../../services/operations/payrollCalculations.js'
@@ -40,7 +42,7 @@ export default function AddDeductionModal({
       'aria-invalid': !!errors[name], 'aria-describedby': errors[name] ? `deduction-${name}-error` : undefined }
   }
   function fieldError(name) {
-    return errors[name] && <small className="field-error" id={`deduction-${name}-error`}>{errors[name].message}</small>
+    return errors[name] && <small className="payroll-field-error tw:block tw:text-[11px] tw:font-normal tw:text-[#b33450] tw:mt-[7px] tw:leading-[1.6]" id={`deduction-${name}-error`}>{errors[name].message}</small>
   }
   function invalid(nextErrors) {
     formRef.current?.querySelector(`[name="${Object.keys(nextErrors)[0]}"]`)?.focus()
@@ -96,23 +98,38 @@ export default function AddDeductionModal({
       title={deduction ? 'Edit Deduction' : 'Add Deduction'}
       subtitle={monthLabel(month)}
       onClose={close}
-      className="payroll-deduction-modal"
+      className="payroll-deduction-modal tw:[&.modal]:w-[min(560px,calc(100vw-24px))] tw:[&.modal]:max-h-[calc(100dvh-32px)]
+        tw:[&_.modal-inner]:p-[20px] tw:[&_.modal-heading]:pb-[12px] tw:[&_.modal-heading]:mb-[14px]
+        tw:[&_.modal-heading_h2]:text-[19px] tw:[&_.modal-actions]:mt-[14px] tw:[&_.modal-actions]:pt-[14px]"
     >
       <form ref={formRef} onSubmit={(event) => handleSubmit(submit, invalid)(event)} noValidate aria-busy={saving}>
-        <fieldset className="leave-form-fieldset" disabled={saving}>
-          <div className="employee-fields-grid leave-form-grid">
-            <label className="full-width">
+        <fieldset className="leave-form-fieldset tw:[border:0] tw:p-0 tw:m-0 tw:min-w-0" disabled={saving}>
+          <div className="payroll-fields-grid tw:grid tw:grid-cols-[repeat(2,minmax(0,1fr))] tw:[&>label]:block tw:[&>label]:text-[#48655f]
+          tw:[&>label]:text-[11px] tw:[&>label]:font-[650] tw:[&>label]:leading-[1.5]
+          tw:[&>label>span]:text-[#b65265] tw:gap-[12px_14px] tw:[margin-block:0_12px]
+          tw:[@media(width<768px)]:grid-cols-1 tw:[@media(width<768px)]:[&_input]:text-[16px]
+          tw:[@media(width<768px)]:[&_select]:text-[16px] tw:[@media(width<768px)]:[&_textarea]:text-[16px]
+          tw:[&_input:not([type=checkbox])]:h-[38px] tw:[&_input:not([type=checkbox])]:mt-[5px]
+          tw:[&_input:not([type=checkbox])]:p-[8px_10px] tw:[&_select]:w-full tw:[&_select]:h-[38px]
+          tw:[&_select]:mt-[5px] tw:[&_select]:p-[8px_10px] tw:[&_textarea]:w-full tw:[&_textarea]:min-h-[60px]
+          tw:[&_textarea]:h-[60px] tw:[&_textarea]:mt-[5px] tw:[&_textarea]:p-[8px_10px] tw:[&_textarea]:resize-y
+          tw:[&_input[type=checkbox]]:inline-block tw:[&_input[type=checkbox]]:w-[16px]
+          tw:[&_input[type=checkbox]]:h-[16px] tw:[&_input[type=checkbox]]:min-h-[16px]
+          tw:[&_input[type=checkbox]]:min-w-[16px] tw:[&_input[type=checkbox]]:flex-[0_0_16px]
+          tw:[&_input[type=checkbox]]:p-0 tw:[&_input[type=checkbox]]:m-0
+          tw:[&_input[type=checkbox]]:accent-[#078775]">
+            <label className="tw:col-span-full">
               Deduction name <span>*</span>
-              <input
+              <FormInput variant="employee"
                 {...fieldProps('name')}
                 maxLength={80}
                 required
                 placeholder="e.g. Loan repayment"
               />{fieldError('name')}
             </label>
-            <label className="full-width">
+            <label className="tw:col-span-full">
               Description <span>*</span>
-              <textarea
+              <FormTextarea variant="employee"
                 {...fieldProps('description')}
                 maxLength={300}
                 rows={2}
@@ -121,7 +138,7 @@ export default function AddDeductionModal({
             </label>
             <label>
               Calculation{' '}
-              <select
+              <FormSelect variant="employee"
                 {...register('kind', { onChange: changeCalculation })}
                 aria-invalid={!!errors.kind}
               >
@@ -130,13 +147,13 @@ export default function AddDeductionModal({
                 )}
                 <option value="fixed">Fixed amount (ETB)</option>
                 <option value="percent">Percentage of gross salary</option>
-              </select>{fieldError('kind')}
+              </FormSelect>{fieldError('kind')}
             </label>
             {values.kind !== 'automatic' && (
               <label>
                 {values.kind === 'fixed' ? 'Amount (ETB)' : 'Rate (%)'}{' '}
                 <span>*</span>
-                <input
+                <FormInput variant="employee"
                   type="number"
                   min="0.01"
                   max={values.kind === 'percent' ? 100 : undefined}
@@ -146,23 +163,27 @@ export default function AddDeductionModal({
                 />{fieldError('value')}
               </label>
             )}
-            <label className="full-width">
+            <label className="tw:col-span-full">
               Applies to{' '}
-              <select
+              <FormSelect variant="employee"
                 {...fieldProps('appliesTo')}
               >
                 <option value="all">All employees in this payroll</option>
                 <option value="selected">Selected employees</option>
-              </select>{fieldError('appliesTo')}
+              </FormSelect>{fieldError('appliesTo')}
             </label>
             {values.appliesTo === 'selected' && (
-              <fieldset className="payroll-employee-picker full-width">
+              <fieldset className="payroll-employee-picker tw:col-span-full tw:max-h-[152px] tw:overflow-auto tw:[border:1px_solid_#dcebee]
+          tw:rounded-[8px] tw:p-[8px_10px] tw:[&_legend]:text-[12px] tw:[&_legend]:text-[#587d8b] tw:[&_label]:flex
+          tw:[&_label]:gap-[10px] tw:[&_label]:items-center tw:[&_label]:justify-start tw:[&_label]:min-h-[38px]
+          tw:[&_label]:p-[5px_0] tw:[&_label]:text-[12px] tw:[&_label]:cursor-pointer tw:[&_small]:block
+          tw:[&_small]:text-[#7694a1] tw:[&_small]:mt-[2px] tw:[&_small]:text-[10px]">
                 <legend>
                   Select employees · {values.employeeIds.length} selected
                 </legend>
                 {employees.map((employee) => (
                   <label key={employee.id}>
-                    <input
+                    <FormInput variant="employee"
                       type="checkbox"
                       name="employeeIds"
                       checked={values.employeeIds.includes(employee.id)}
@@ -179,8 +200,8 @@ export default function AddDeductionModal({
                 {fieldError('employeeIds')}
               </fieldset>
             )}
-            <label className="payroll-active-checkbox full-width">
-              <input
+            <label className="payroll-active-checkbox tw:col-span-full tw:flex! tw:flex-row! tw:items-center tw:gap-[10px]">
+              <FormInput variant="employee"
                 type="checkbox"
                 {...fieldProps('active')}
               />
@@ -188,29 +209,29 @@ export default function AddDeductionModal({
             </label>
           </div>
         </fieldset>
-        <p className="field-hint">
+        <p className="payroll-field-hint tw:block tw:text-[10px] tw:font-normal tw:text-[var(--text-muted)] tw:mt-[7px]">
           Applies to {monthLabel(month)} only. Saving updates this month’s
           generated payroll.
         </p>
         {error && (
-          <p className="form-error" role="alert">
+          <p className="payroll-form-error tw:mt-[16px] tw:text-[13px] tw:rounded-[5px] tw:p-[10px_12px] tw:leading-[1.6] tw:text-[#b42344]
+          tw:bg-[#fff0f3]" role="alert">
             {error}
           </p>
         )}
-        <div className="modal-actions">
-          <button
+        <ModalActions >
+          <Button variant="secondary"
             type="button"
-            className="button button-secondary"
             disabled={saving}
             onClick={close}
           >
             Cancel
-          </button>
-          <button className="button button-primary" disabled={saving}>
+          </Button>
+          <Button disabled={saving}>
             <Icon name="check" size={17} />
             {saving ? 'Saving…' : 'Save Deduction'}
-          </button>
-        </div>
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   )

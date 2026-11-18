@@ -1,5 +1,31 @@
 # Hadiya Science HRMS — Admin
 
+## Tailwind styling
+
+All implemented admin screens now use prefixed Tailwind utilities in JSX,
+including Rewards, Discipline, Career, Announcements, Reports, Documents,
+Services, and the shared styling dependencies of earlier sections. The admin
+imports only `src/styles/tailwind.css`; old page, login, index, and variables
+stylesheets are removed. The Tailwind entry preserves the shared theme and
+essential typography, native-control, focus/accessibility, reduced-motion,
+and theme-breakpoint defaults before generating page utilities.
+Data-driven inline chart values and
+the standalone payroll print/PDF styles remain in their existing output code.
+
+The final conversion on 18 November 2026 changes styling only. Existing text,
+markup, handlers, validation, state, and backend services remain in place.
+`shared-base` gives shared utility defaults lower specificity so explicit page
+styles can override them. Inclusive page breakpoints use explicit media variants.
+Dynamic category/status selectors keep their literal underscores with String.raw.
+
+The user will perform the final browser, responsive, and interaction testing.
+No new backup or rollback patch was created for this delivery, as requested.
+See [the backend handoff](../BACKEND_HANDOFF.md) for integration details.
+The old migration log, test files, and unused starter assets were removed
+for this handoff. All 41 original empty admin files were restored for future
+development, including Notifications and Settings. Final ESLint, production build, and utility-generation checks
+passed; the existing large-chunk build advisory remains.
+
 ## Shared data with Zustand
 
 `src/store/index.js` holds the shared records for employees, departments, grades,
@@ -117,12 +143,10 @@ Service validation opens collapsed additional details before focusing an error.
 ## Checks
 
 ```sh
-npm test
 npm run lint
-npm run build
+npm run build -- --configLoader native
 ```
 
-The tests cover the current validation contracts, resolver output, conditional
-fields, employee arrays, salary snapshots, related-record updates,
-invalid-update rejection, uploaded files, and logout reset. Empty placeholder
-pages do not gain new screens or backend endpoints from these packages.
+Test files were removed at the owner's request. Browser, responsive, and
+interaction testing remains with the owner. Unimplemented menu actions do not
+gain new screens or backend endpoints from the frontend packages.

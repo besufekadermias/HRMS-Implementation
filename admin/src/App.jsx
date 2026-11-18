@@ -1,3 +1,5 @@
+import Card from './components/common/Card.jsx'
+import Button, { IconButton } from './components/common/Button.jsx'
 import { useEffect, useState } from 'react'
 import { useAdminStore } from './store/index.js'
 import AdminLayout from './layouts/main/AdminLayout.jsx'
@@ -542,20 +544,28 @@ export default function App() {
   else if (PAYROLL_PAGES.some((item) => item.id === route.page))
     content = payroll.data ? <PayrollWorkspace payroll={payroll} employees={employees} page={route.page}
       search={search} onSearch={setSearch} onNavigate={navigate} onDirtyChange={setDirty} /> : (
-      <section className="card empty-state" aria-busy={payroll.loading}><Icon name={payroll.loading ? 'clock' : 'info'} size={30} />
+      <Card className="empty-state tw:shared-base:flex tw:shared-base:items-center tw:shared-base:justify-center tw:shared-base:flex-col
+          tw:shared-base:gap-[13px] tw:shared-base:p-[35px_20px] tw:shared-base:text-center
+          tw:shared-base:[color:var(--text-muted)] tw:shared-base:[&_h3]:text-[17px]
+          tw:shared-base:[&_h3]:[color:var(--text-primary)] tw:shared-base:[&_p]:text-[13px]
+          tw:shared-base:[&_p]:max-w-[470px] tw:shared-base:[&_p]:leading-[1.8]" aria-busy={payroll.loading}><Icon name={payroll.loading ? 'clock' : 'info'} size={30} />
         <h1>{payroll.loading ? 'Loading payroll…' : 'Payroll unavailable'}</h1>
         {payroll.error && <p role="alert">{payroll.error}</p>}
-        {!payroll.loading && <button className="button button-primary" onClick={payroll.reset}>Try Again</button>}
-      </section>
+        {!payroll.loading && <Button onClick={payroll.reset}>Try Again</Button>}
+      </Card>
     )
   else if (['leave', 'leave-settings'].includes(route.page) && !leave.data)
     content = (
-      <section className="card empty-state" aria-busy={leave.loading}>
+      <Card className="empty-state tw:shared-base:flex tw:shared-base:items-center tw:shared-base:justify-center tw:shared-base:flex-col
+          tw:shared-base:gap-[13px] tw:shared-base:p-[35px_20px] tw:shared-base:text-center
+          tw:shared-base:[color:var(--text-muted)] tw:shared-base:[&_h3]:text-[17px]
+          tw:shared-base:[&_h3]:[color:var(--text-primary)] tw:shared-base:[&_p]:text-[13px]
+          tw:shared-base:[&_p]:max-w-[470px] tw:shared-base:[&_p]:leading-[1.8]" aria-busy={leave.loading}>
         <Icon name={leave.loading ? 'clock' : 'info'} size={30} />
         <h1>{leave.loading ? 'Loading leave data…' : 'Leave data unavailable'}</h1>
         {leave.loadError && <p role="alert">{leave.loadError}</p>}
-        {!leave.loading && <button className="button button-primary" onClick={leave.reload}>Try Again</button>}
-      </section>
+        {!leave.loading && <Button onClick={leave.reload}>Try Again</Button>}
+      </Card>
     )
   else if (route.page === 'leave')
     content = (
@@ -674,12 +684,14 @@ export default function App() {
       announcementCount={announcements.length}
     >
       {['leave', 'leave-settings'].includes(route.page) && leave.data && leave.loadError && (
-        <section className="card form-error" role="alert">
+        <Card className="form-error tw:shared-base:mt-[16px] tw:shared-base:text-[13px] tw:shared-base:rounded-[5px]
+          tw:shared-base:p-[10px_12px] tw:shared-base:leading-[1.6] tw:shared-base:[color:#b42344]
+          tw:shared-base:[background:#fff0f3]" role="alert">
           <p>{leave.loadError} The last loaded records are still shown.</p>
-          <button type="button" className="button button-secondary" disabled={operationSaving} onClick={leave.retryRefresh}>
+          <Button variant="secondary" type="button" disabled={operationSaving} onClick={leave.retryRefresh}>
             {operationSaving ? 'Please wait…' : 'Retry Refresh'}
-          </button>
-        </section>
+          </Button>
+        </Card>
       )}
       {content}
       {action === 'announcement' && <PostAnnouncementModal onSave={handlePostAnnouncement}
@@ -706,16 +718,24 @@ export default function App() {
         </ConfirmationModal>
       )}
       {toast && (
-        <div className="toast" role="status">
+        <div className="toast tw:shared-base:[position:fixed] tw:shared-base:right-[25px] tw:shared-base:bottom-[24px]
+          tw:shared-base:z-[45] tw:shared-base:flex tw:shared-base:items-center tw:shared-base:gap-[12px]
+          tw:shared-base:max-w-[min(500px,_calc(100vw_-_32px))] tw:shared-base:[background:#0c5045]
+          tw:shared-base:[color:white] tw:shared-base:[border:1px_solid_#377266]
+          tw:shared-base:p-[10px_12px_10px_18px] tw:shared-base:rounded-[10px]
+          tw:shared-base:[box-shadow:0_10px_30px_#0b383326] tw:shared-base:text-[13px]
+          tw:shared-base:[&_.icon-button]:[color:#c3e5dc] tw:shared-base:[&_.icon-button]:w-[30px]
+          tw:shared-base:[&_.icon-button]:h-[30px] tw:shared-base:[&_.icon-button:hover]:[background:#ffffff14]
+          tw:max-[768px]:shared-base:right-[16px]
+          tw:max-[768px]:shared-base:bottom-[16px]" role="status">
           <Icon name="check-circle" size={20} />
           <span>{toast}</span>
-          <button
-            className="icon-button"
+          <IconButton
             onClick={() => setToast('')}
             aria-label="Dismiss message"
           >
             <Icon name="close" size={16} />
-          </button>
+          </IconButton>
         </div>
       )}
     </AdminLayout>

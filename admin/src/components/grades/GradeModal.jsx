@@ -1,7 +1,9 @@
+import Button from '../common/Button.jsx'
+import { FormInput } from '../common/FormFields.jsx'
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import Modal from '../common/Modal.jsx'
+import Modal, { ModalActions } from '../common/Modal.jsx'
 import ConfirmationModal from '../common/ConfirmationModal.jsx'
 import Icon from '../common/Icon.jsx'
 import { validateJobGradeRules } from '../../utils/validation/validators.js'
@@ -76,14 +78,26 @@ export default function GradeModal({
     >
       <form onSubmit={handleSubmit(submit)} noValidate aria-busy={isSubmitting}>
         {grade && (
-          <p className="grade-form-id">
-            Grade ID <strong>#{grade.id}</strong>
+          <p className="grade-form-id tw:text-[12px] tw:text-[var(--text-muted)] tw:mb-[18px]">
+            Grade ID <strong className="tw:text-primary tw:pl-[5px]">#{grade.id}</strong>
           </p>
         )}
-        <div className="employee-fields-grid grade-fields-grid">
+        <div className="employee-fields-grid grade-fields-grid tw:grid-cols-[minmax(0,_1fr)] tw:gap-[19px]
+          tw:max-[768px]:[&_input]:text-[16px] tw:shared-base:grid
+          tw:shared-base:grid-cols-[repeat(3,_minmax(0,_1fr))] tw:shared-base:gap-[23px_22px]
+          tw:shared-base:[&_>_label]:block tw:shared-base:[&_>_label]:[color:#48655f]
+          tw:shared-base:[&_>_label]:text-[11px] tw:shared-base:[&_>_label]:font-[650]
+          tw:shared-base:[&_>_label]:leading-[1.5]
+          tw:shared-base:[&_>_label_>_span:not(.password-field)]:[color:#b65265]
+          tw:shared-base:[&_.span-two]:col-[span_2] tw:max-[1100px]:shared-base:gap-[20px_17px]
+          tw:max-[768px]:shared-base:grid-cols-[repeat(2,_minmax(0,_1fr))]
+          tw:max-[768px]:shared-base:[&_.span-two]:col-[1_/_-1]
+          tw:max-[560px]:shared-base:grid-cols-[minmax(0,_1fr)]
+          tw:max-[560px]:shared-base:[&_.span-two]:col-[auto]
+          tw:max-[560px]:shared-base:[&_>_label]:text-[11px]">
           <label>
             Grade title <span>*</span>
-            <input
+            <FormInput variant="employee"
               {...register('name')}
               placeholder="e.g. Grade V"
               maxLength={80}
@@ -93,14 +107,15 @@ export default function GradeModal({
               aria-describedby={errors.name ? 'grade-name-error' : undefined}
             />
             {errors.name && (
-              <small className="field-error" id="grade-name-error">
+              <small className="field-error tw:shared-base:block tw:shared-base:text-[11px] tw:shared-base:font-normal
+          tw:shared-base:[color:#b33450] tw:shared-base:mt-[7px] tw:shared-base:leading-[1.6]" id="grade-name-error">
                 {errors.name.message}
               </small>
             )}
           </label>
           <label>
             Base salary (ETB) <span>*</span>
-            <input
+            <FormInput variant="employee"
               {...register('salary')}
               type="number"
               inputMode="decimal"
@@ -116,11 +131,13 @@ export default function GradeModal({
               }
             />
             {errors.salary ? (
-              <small className="field-error" id="grade-salary-error">
+              <small className="field-error tw:shared-base:block tw:shared-base:text-[11px] tw:shared-base:font-normal
+          tw:shared-base:[color:#b33450] tw:shared-base:mt-[7px] tw:shared-base:leading-[1.6]" id="grade-salary-error">
                 {errors.salary.message}
               </small>
             ) : (
-              <small className="field-hint" id="grade-salary-hint">
+              <small className="field-hint tw:shared-base:block tw:shared-base:text-[10px] tw:shared-base:font-normal
+          tw:shared-base:[color:var(--text-muted)] tw:shared-base:mt-[7px]" id="grade-salary-hint">
                 Base salary only; allowances and deductions are handled
                 separately.
               </small>
@@ -128,7 +145,11 @@ export default function GradeModal({
           </label>
         </div>
         {staffCount > 0 && (
-          <div className="notice grade-impact-note">
+          <div className="notice grade-impact-note tw:mt-[20px] tw:mb-0 tw:shared-base:flex tw:shared-base:items-start
+          tw:shared-base:gap-[11px] tw:shared-base:[background:#f0f8f6] tw:shared-base:[border:1px_solid_#daeee6]
+          tw:shared-base:[color:#46756c] tw:shared-base:p-[13px_14px] tw:shared-base:rounded-[7px]
+          tw:shared-base:m-[18px_0] tw:shared-base:text-[12px] tw:shared-base:leading-[1.7]
+          tw:shared-base:[&_>_svg]:mt-[2px] tw:shared-base:[&_>_svg]:w-[18px]">
             <Icon name="info" size={19} />
             <p>
               This grade is assigned to{' '}
@@ -142,24 +163,25 @@ export default function GradeModal({
           </div>
         )}
         {errors.root && (
-          <p className="form-error" role="alert">
+          <p className="form-error tw:shared-base:mt-[16px] tw:shared-base:text-[13px] tw:shared-base:rounded-[5px]
+          tw:shared-base:p-[10px_12px] tw:shared-base:leading-[1.6] tw:shared-base:[color:#b42344]
+          tw:shared-base:[background:#fff0f3]" role="alert">
             {errors.root.message}
           </p>
         )}
-        <div className="modal-actions">
-          <button
+        <ModalActions >
+          <Button variant="secondary"
             type="button"
-            className="button button-secondary"
             onClick={close}
             disabled={isSubmitting}
           >
             Cancel
-          </button>
-          <button type="submit" className="button button-primary" disabled={isSubmitting}>
+          </Button>
+          <Button type="submit" disabled={isSubmitting}>
             <Icon name={grade ? 'check' : 'plus'} size={17} />
             {isSubmitting ? 'Saving…' : grade ? 'Save Changes' : 'Add Job Grade'}
-          </button>
-        </div>
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   )

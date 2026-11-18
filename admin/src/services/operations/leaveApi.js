@@ -1,7 +1,7 @@
 import { leaveResponseSchema } from '../../utils/validation/operationsSchemas.js';
 // Backend connection point. Replace these async method bodies with API calls.
 // They currently return in-memory data so the UI works before the server exists.
-// Contract and examples: admin/docs/leave-backend-handoff.md
+// Contract and integration notes: BACKEND_HANDOFF.md at the repository root.
 import {
   INITIAL_LEAVE_REQUESTS,
   INITIAL_LEAVE_BALANCES,

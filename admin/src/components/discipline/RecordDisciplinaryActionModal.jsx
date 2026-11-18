@@ -1,9 +1,11 @@
+import Button from '../common/Button.jsx'
+import { FormSelect, FormInput, FormTextarea } from '../common/FormFields.jsx'
 import { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { disciplinaryActionFormSchema } from '../../utils/validation/growthSchemas.js'
 import { showFormErrors } from '../../utils/validation/formErrors.js'
-import Modal from '../common/Modal.jsx'
+import Modal, { ModalActions } from '../common/Modal.jsx'
 import ConfirmationModal from '../common/ConfirmationModal.jsx'
 import Icon from '../common/Icon.jsx'
 import { SANCTIONS, validateDisciplinaryActionRules } from '../../services/growth/disciplineService.js'
@@ -57,7 +59,8 @@ export default function RecordDisciplinaryActionModal({ employees, onSave, onClo
     }
   }
   function fieldError(name) {
-    return errors[name] && <small className="field-error" id={`discipline-${name}-error`}>{errors[name].message}</small>
+    return errors[name] && <small className="field-error tw:shared-base:block tw:shared-base:text-[11px] tw:shared-base:font-normal
+          tw:shared-base:[color:#b33450] tw:shared-base:mt-[7px] tw:shared-base:leading-[1.6]" id={`discipline-${name}-error`}>{errors[name].message}</small>
   }
 
   if (confirmDiscard) return (
@@ -68,47 +71,66 @@ export default function RecordDisciplinaryActionModal({ employees, onSave, onClo
   )
 
   return (
-    <Modal className="discipline-modal" onClose={close}
+    <Modal size="small" className="discipline-modal tw:[&_.modal-heading]:[border-bottom:0] tw:[&_.modal-heading]:pb-[0] tw:[&_.modal-heading_h2]:flex
+          tw:[&_.modal-heading_h2]:items-center tw:[&_.modal-heading_h2]:gap-[10px]
+          tw:[&_.modal-heading_h2_svg]:[color:#df0015]
+          tw:[@media(width<=700px)]:[&_.modal-heading_h2]:text-[19px]" onClose={close}
       title={<><Icon name="alert-triangle" size={25} /> Record Disciplinary Action</>}>
       <form onSubmit={(event) => handleSubmit(submit)(event)} noValidate aria-busy={saving}>
-        <fieldset className="discipline-fields form-grid" disabled={saving}>
-          <legend className="sr-only">Disciplinary action details</legend>
+        <fieldset className="discipline-fields form-grid tw:shared-base:grid tw:shared-base:grid-cols-[repeat(2,_minmax(0,_1fr))]
+          tw:shared-base:gap-[20px] tw:shared-base:[&_label]:block tw:shared-base:[&_label]:text-[12px]
+          tw:shared-base:[&_label]:font-semibold tw:shared-base:[&_label]:[color:var(--text-secondary)]
+          tw:shared-base:[&_label_>_span]:[color:#c75560]
+          tw:max-[480px]:shared-base:grid-cols-[minmax(0,_1fr)]
+          tw:max-[480px]:shared-base:gap-[17px] tw:grid-cols-[minmax(0,_1fr)] tw:gap-[20px]
+          tw:[border:0] tw:p-[0] tw:m-[0] tw:min-w-0 tw:[&_label]:uppercase tw:[&_label]:tracking-[.6px]
+          tw:[&_input]:normal-case tw:[&_input]:tracking-[normal] tw:[&_input]:rounded-[10px]
+          tw:[&_input]:min-h-[44px] tw:[&_select]:normal-case tw:[&_select]:tracking-[normal]
+          tw:[&_select]:rounded-[10px] tw:[&_select]:min-h-[44px] tw:[&_textarea]:normal-case
+          tw:[&_textarea]:tracking-[normal] tw:[&_textarea]:rounded-[10px] tw:[&_textarea]:min-h-[44px]
+          tw:[&_textarea]:min-h-[100px] tw:[&_.field-error]:normal-case tw:[&_.field-error]:tracking-[normal]
+          tw:[&_[aria-invalid='true']]:[border-color:#b42344]" disabled={saving}>
+          <legend className="sr-only tw:sr-only">Disciplinary action details</legend>
           <label>Employee <span>*</span>
-            <select {...fieldProps('employeeId')} required>
+            <FormSelect {...fieldProps('employeeId')} required>
               <option value="">Select Employee</option>
               {employees.map((employee) => <option key={employee.id} value={employee.id}>
                 {employee.name} · {employee.id} · {employee.department}
               </option>)}
-            </select>
+            </FormSelect>
             {fieldError('employeeId')}
           </label>
           <label>Incident date <span>*</span>
-            <input {...fieldProps('incidentDate')} type="date" min="1900-01-01" max={todayInNairobi()} required />
+            <FormInput {...fieldProps('incidentDate')} type="date" min="1900-01-01" max={todayInNairobi()} required />
             {fieldError('incidentDate')}
           </label>
           <label>Violation type <span>*</span>
-            <input {...fieldProps('violationType')} placeholder="e.g. Unauthorized Absence or IT Security Breach" maxLength={100} required />
+            <FormInput {...fieldProps('violationType')} placeholder="e.g. Unauthorized Absence or IT Security Breach" maxLength={100} required />
             {fieldError('violationType')}
           </label>
           <label>Sanction / Penalty action <span>*</span>
-            <select {...fieldProps('penaltyAction')} required>
+            <FormSelect {...fieldProps('penaltyAction')} required>
               {SANCTIONS.map((sanction) => <option key={sanction.value} value={sanction.value}>{sanction.label.toUpperCase()}</option>)}
-            </select>
+            </FormSelect>
             {fieldError('penaltyAction')}
           </label>
           <label>Details / Explanation
-            <textarea {...fieldProps('description')} placeholder="Official memorandum notes…" rows={4} maxLength={5000} />
+            <FormTextarea {...fieldProps('description')} placeholder="Official memorandum notes…" rows={4} maxLength={5000} />
             {fieldError('description')}
           </label>
         </fieldset>
-        {saveError && <p className="form-error" role="alert">{saveError}</p>}
-        {!employees.length && <p className="form-error" role="alert">Add an employee before recording a disciplinary action.</p>}
-        <div className="modal-actions">
-          <button type="button" className="button button-secondary" onClick={close} disabled={saving}>Cancel</button>
-          <button type="submit" className="button button-discipline" disabled={saving || !employees.length}>
+        {saveError && <p className="form-error tw:shared-base:mt-[16px] tw:shared-base:text-[13px] tw:shared-base:rounded-[5px]
+          tw:shared-base:p-[10px_12px] tw:shared-base:leading-[1.6] tw:shared-base:[color:#b42344]
+          tw:shared-base:[background:#fff0f3]" role="alert">{saveError}</p>}
+        {!employees.length && <p className="form-error tw:shared-base:mt-[16px] tw:shared-base:text-[13px] tw:shared-base:rounded-[5px]
+          tw:shared-base:p-[10px_12px] tw:shared-base:leading-[1.6] tw:shared-base:[color:#b42344]
+          tw:shared-base:[background:#fff0f3]" role="alert">Add an employee before recording a disciplinary action.</p>}
+        <ModalActions >
+          <Button variant="secondary" type="button" onClick={close} disabled={saving}>Cancel</Button>
+          <Button variant="discipline" type="submit" disabled={saving || !employees.length}>
             {saving ? 'Saving Record…' : 'Save Record'}
-          </button>
-        </div>
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   )
