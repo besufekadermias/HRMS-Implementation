@@ -441,6 +441,8 @@ export const NAVIGATION = [
   { id: "reports", label: "Reports", icon: "bar-chart" },
   { id: "documents", label: "Documents", icon: "folder" },
   { id: "services", label: "Services", icon: "globe" },
+  { id: "notifications", label: "Notifications", icon: "bell" },
+  { id: "settings", label: "General Settings", icon: "settings" },
 ];
 
 export const OPERATIONS = [

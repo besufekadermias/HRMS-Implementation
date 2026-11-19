@@ -1,8 +1,8 @@
 import { attendanceSettingsSchema } from '../../utils/validation/operationsSchemas.js';
 import { fieldErrors } from '../../utils/validation/schemaHelpers.js';
+import formatTime, { formatTimestamp } from '../../utils/formatters/formatTime.js';
 import {
   ATTENDANCE_STATUSES,
-  ATTENDANCE_TIME_ZONE,
 } from "../../utils/constants/constants.js";
 
 // Read-only display helpers. No IP checks, attendance writes, or rule enforcement.
@@ -122,15 +122,7 @@ export function summarizeDepartments(rows, departments) {
 }
 
 export function formatAttendanceTime(value) {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return new Intl.DateTimeFormat("en-GB", {
-    timeZone: ATTENDANCE_TIME_ZONE,
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).format(date);
+  return formatTime(value);
 }
 
 export function buildAttendanceHistory(
@@ -227,16 +219,7 @@ export function summarizeLateArrivals(rows) {
 }
 
 export function formatAttendanceTimestamp(value) {
-  if (!value || Number.isNaN(Date.parse(value))) return "—";
-  return new Intl.DateTimeFormat("en-GB", {
-    timeZone: ATTENDANCE_TIME_ZONE,
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).format(new Date(value));
+  return formatTimestamp(value);
 }
 
 export function formatLateMinutes(value) {

@@ -45,7 +45,7 @@ export function validateAnnouncement(values) {
   return fieldErrors(announcementSchema, values);
 }
 
-export function postAnnouncement(records, values) {
+export function postAnnouncement(records, values, author = "Besufekad Ermias") {
   const errors = validateAnnouncement(values);
   if (Object.keys(errors).length) throw new Error(Object.values(errors)[0]);
   const announcement = {
@@ -54,7 +54,7 @@ export function postAnnouncement(records, values) {
     content: values.content.trim(),
     targetAudience: values.targetAudience,
     // The backend should supply the authenticated author and posting timestamp.
-    postedBy: "Besufekad Ermias",
+    postedBy: author,
     date: todayInNairobi(),
   };
   return [announcement, ...records];

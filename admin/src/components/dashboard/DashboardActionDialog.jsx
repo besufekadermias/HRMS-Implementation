@@ -13,7 +13,6 @@ const titles = {
   grades: 'Grades & Scales',
   attendance: 'Daily Attendance Log',
   applicants: 'Candidate Applications',
-  profile: 'Manager Profile',
   logout: 'Leave this workspace?',
   rewards: 'Rewards & Recognition',
   discipline: 'Discipline',
@@ -25,6 +24,7 @@ export default function DashboardActionDialog({
   employees,
   onClose,
   onLogout,
+  busy = false,
 }) {
   let content
 
@@ -133,42 +133,6 @@ export default function DashboardActionDialog({
         </div>
       </>
     )
-  } else if (action === 'profile') {
-    content = (
-      <>
-        <div className="employee-detail-title tw:shared-base:flex tw:shared-base:items-center tw:shared-base:gap-[14px]
-          tw:shared-base:[&_.avatar]:w-[54px] tw:shared-base:[&_.avatar]:h-[54px]
-          tw:shared-base:[&_.avatar]:text-[21px] tw:shared-base:[&_p]:mt-[6px] tw:shared-base:[&_p]:text-[12px]
-          tw:shared-base:[&_p]:[color:var(--text-muted)] tw:shared-base:[&_.status-pill]:ml-[auto]
-          tw:max-[480px]:shared-base:flex-wrap
-          tw:max-[480px]:shared-base:[&_.status-pill]:ml-[0]">
-          <span className="avatar tw:shared-base:inline-flex tw:shared-base:shrink-0 tw:shared-base:items-center tw:shared-base:justify-center
-          tw:shared-base:w-[39px] tw:shared-base:h-[39px] tw:shared-base:rounded-[50%]
-          tw:shared-base:[color:#206c62] tw:shared-base:[background:linear-gradient(140deg,_#e3f4ee,_#c9e7e0)]
-          tw:shared-base:[border:3px_solid_white] tw:shared-base:text-[16px] tw:shared-base:font-semibold">B</span>
-          <div>
-            <h3>Besufekad Ermias</h3>
-            <p>HR Manager</p>
-          </div>
-        </div>
-        <dl className="detail-list tw:shared-base:m-[18px_0] tw:shared-base:[&_>_div]:flex tw:shared-base:[&_>_div]:justify-between
-          tw:shared-base:[&_>_div]:gap-[20px] tw:shared-base:[&_>_div]:p-[15px_0]
-          tw:shared-base:[&_>_div]:[border-bottom:1px_solid_var(--divider)] tw:shared-base:[&_>_div]:text-[13px]
-          tw:shared-base:[&_dt]:[color:var(--text-muted)] tw:shared-base:[&_dd]:[color:var(--text-primary)]
-          tw:shared-base:[&_dd]:m-[0] tw:shared-base:[&_dd]:text-right tw:shared-base:[&_dd]:font-[500]
-          tw:max-[480px]:shared-base:[&_>_div]:text-[12px]
-          tw:max-[480px]:shared-base:[&_>_div]:gap-[12px]">
-          <div>
-            <dt>Organization</dt>
-            <dd>Hadiya Science</dd>
-          </div>
-          <div>
-            <dt>Workspace</dt>
-            <dd>IT Department HRMS</dd>
-          </div>
-        </dl>
-      </>
-    )
   } else if (action === 'logout') {
     content = (
       <>
@@ -176,11 +140,11 @@ export default function DashboardActionDialog({
           Leaving will clear the current workspace changes.
         </DialogIntro>
         <ModalActions >
-          <Button variant="secondary" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose} disabled={busy}>
             Stay here
           </Button>
-          <Button onClick={onLogout}>
-            Leave Workspace
+          <Button onClick={onLogout} disabled={busy}>
+            {busy ? 'Signing out…' : 'Leave Workspace'}
           </Button>
         </ModalActions>
       </>
@@ -216,7 +180,7 @@ export default function DashboardActionDialog({
     <Modal
       title={titles[action] || 'Workspace'}
       subtitle="Hadiya Science · HR Management"
-      onClose={onClose}
+      onClose={() => { if (!busy) onClose() }}
     >
       {content}
     </Modal>

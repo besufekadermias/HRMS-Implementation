@@ -21,6 +21,7 @@ export default function Sidebar({
   onNavigate,
   mobile = false,
   activePage = 'dashboard',
+  account,
 }) {
   const employeesActive = [
     'employees',
@@ -59,7 +60,7 @@ export default function Sidebar({
         tw:[background:linear-gradient(160deg,#0b3432_0%,#0c3534_55%,var(--sidebar-bottom)_100%)]
         tw:text-[var(--sidebar-text)] tw:overflow-y-auto tw:[scrollbar-width:thin]
         tw:[scrollbar-color:#31635c_transparent] ${mobile ? "sidebar-mobile tw:max-[1024px]:relative tw:max-[1024px]:w-full tw:max-[1024px]:overflow-visible tw:max-[1024px]:flex-1" : "tw:max-[1024px]:hidden"}`}
-      aria-label="HR Manager navigation"
+      aria-label={`${account.role} navigation`}
     >
       <a
         className={`brand tw:flex tw:items-center tw:gap-[13px] tw:[padding:25px_25px_28px] tw:shrink-0
@@ -244,11 +245,12 @@ export default function Sidebar({
           tw:shared-base:items-center tw:shared-base:justify-center tw:shared-base:w-[39px] tw:shared-base:h-[39px]
           tw:shared-base:rounded-[50%] tw:shared-base:[color:#206c62]
           tw:shared-base:[background:linear-gradient(140deg,_#e3f4ee,_#c9e7e0)]
-          tw:shared-base:[border:3px_solid_white] tw:shared-base:text-[16px] tw:shared-base:font-semibold">B</span>
-          <div>
-            <strong className="tw:block tw:text-[#e2eeec] tw:text-[11px] tw:font-semibold">HR Manager</strong>
-            <span className="tw:block tw:text-[10px] tw:mt-1 tw:text-[#91b0ad]">Besufekad Ermias</span>
-          </div>
+          tw:shared-base:[border:3px_solid_white] tw:shared-base:text-[16px] tw:shared-base:font-semibold">{account.profile.fullName.charAt(0).toUpperCase()}</span>
+          <button type="button" onClick={() => onNavigate('profile')} aria-current={activePage === 'profile' ? 'page' : undefined}
+            className="tw:min-w-0 tw:bg-transparent tw:border-0 tw:p-0 tw:text-left tw:rounded-md" aria-label="Open my account">
+            <strong className="tw:block tw:text-[#e2eeec] tw:text-[11px] tw:font-semibold">{account.role}</strong>
+            <span className="tw:block tw:truncate tw:text-[10px] tw:mt-1 tw:text-[#91b0ad]">{account.profile.fullName}</span>
+          </button>
           <IconButton variant="sidebar"
             aria-label="Log out"
             onClick={() => onNavigate('logout')}

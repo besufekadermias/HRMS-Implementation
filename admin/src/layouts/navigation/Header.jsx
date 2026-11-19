@@ -10,7 +10,10 @@ export default function Header({
   onSearch,
   onMenu,
   onNavigate,
-  announcementCount,
+  notifications,
+  notificationSettings,
+  account,
+  onOpenNotification,
   activePage = 'dashboard',
 }) {
   const [menu, setMenu] = useState(null)
@@ -18,6 +21,7 @@ export default function Header({
   const profileRef = useRef(null)
   const notificationRef = useRef(null)
   const attendanceActive = ATTENDANCE_PAGES.some((item) => item.id === activePage)
+  const unreadCount = notifications.filter(item => !item.read).length
   const attendanceTableId = {
     attendance: 'attendance-table',
     'check-in-logs': 'check-in-logs-table',
@@ -60,9 +64,9 @@ export default function Header({
       >
         <Icon name="menu" />
       </IconButton>
-      {['attendance-settings', 'leave-settings'].includes(activePage) ? (
+      {['attendance-settings', 'leave-settings', 'settings', 'profile'].includes(activePage) ? (
         <div className="attendance-header-title tw:flex tw:items-center tw:flex-1 tw:gap-[9px] tw:text-text-secondary tw:text-[13px]
-          tw:font-semibold"><Icon name="shield" size={19} /> {activePage === 'leave-settings' ? 'Leave Settings' : 'Attendance Settings'}</div>
+          tw:font-semibold"><Icon name={activePage === 'profile' ? 'users' : activePage === 'settings' ? 'settings' : 'shield'} size={19} /> {activePage === 'profile' ? 'My Account' : activePage === 'settings' ? 'General Settings' : activePage === 'leave-settings' ? 'Leave Settings' : 'Attendance Settings'}</div>
       ) : <div className="search-box tw:flex tw:items-center tw:w-[min(48%,532px)] tw:h-[41px] tw:rounded-[24px] tw:bg-[var(--search-bg)]
           tw:[padding:4px_14px_4px_5px] tw:border tw:border-solid tw:border-[#eff4f8] tw:gap-[10px]
           tw:focus-within:border-[#a3d2c8] tw:focus-within:[box-shadow:0_0_0_3px_#dff2ed80] tw:max-[1024px]:mr-auto
@@ -78,7 +82,8 @@ export default function Header({
           value={search}
           onChange={(event) => onSearch(event.target.value)}
           placeholder={
-            activePage === 'services' ? 'Search services, training, or locations…'
+            activePage === 'notifications' ? 'Search notification titles, messages or names…'
+              : activePage === 'services' ? 'Search services, training, or locations…'
               : activePage === 'documents' ? 'Search documents by title, file name, or audience…'
               : activePage === 'reports' ? 'Search reports by name, ID, category, or content…'
               : activePage === 'announcements' ? 'Search announcements by title, message, or audience…'
@@ -101,7 +106,8 @@ export default function Header({
                 : 'Search employees, departments, or IDs…'
           }
           aria-label={
-            activePage === 'services' ? 'Search services'
+            activePage === 'notifications' ? 'Search notifications'
+              : activePage === 'services' ? 'Search services'
               : activePage === 'documents' ? 'Search documents'
               : activePage === 'reports' ? 'Search reports'
               : activePage === 'announcements' ? 'Search announcements'
@@ -121,7 +127,8 @@ export default function Header({
                 : 'Search employees, departments, or IDs'
           }
           aria-controls={
-            activePage === 'services' ? 'services-table'
+            activePage === 'notifications' ? 'notification-list'
+              : activePage === 'services' ? 'services-table'
               : activePage === 'documents' ? 'documents-table'
               : activePage === 'reports' ? 'system-reports-table'
               : activePage === 'announcements' ? 'announcements-table'
@@ -154,7 +161,7 @@ export default function Header({
           <IconButton notification
             type="button"
             ref={notificationRef}
-            aria-label="Notifications"
+            aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ''}`}
             aria-expanded={menu === 'notifications'}
             aria-controls="notification-dropdown"
             onClick={() =>
@@ -162,12 +169,13 @@ export default function Header({
             }
           >
             <Icon name="bell" size={22} />
-            {announcementCount > 0 && <span className="notification-dot tw:absolute tw:right-[7px] tw:top-[6px] tw:bg-[#ef5272] tw:size-[7px]
-          tw:[border:1.5px_solid_white] tw:rounded-[50%]" />}
+            {unreadCount > 0 && <span aria-hidden="true" className="tw:absolute tw:right-0 tw:top-0 tw:bg-[#ef5272] tw:min-w-[17px] tw:h-[17px] tw:px-[3px] tw:flex tw:items-center tw:justify-center tw:rounded-full tw:text-[9px] tw:font-semibold tw:text-white tw:border tw:border-solid tw:border-white">{unreadCount > 99 ? '99+' : unreadCount}</span>}
           </IconButton>
           {menu === 'notifications' && (
             <NotificationsDropdown
-              count={announcementCount}
+              notifications={notifications}
+              notificationSettings={notificationSettings}
+              onOpen={notification => { setMenu(null); notificationRef.current?.focus(); onOpenNotification(notification) }}
               onNavigate={navigate}
             />
           )}
@@ -179,7 +187,7 @@ export default function Header({
             ref={profileRef}
             className="profile-button tw:flex tw:items-center tw:gap-[10px] tw:py-1 tw:px-0 tw:[background:none] tw:[border:0]
           tw:rounded-md tw:max-[768px]:gap-[3px]"
-            aria-label="Open HR Manager profile"
+            aria-label={`Open ${account.profile.fullName}'s account options`}
             aria-expanded={menu === 'profile'}
             aria-controls="profile-dropdown"
             onClick={() => setMenu(menu === 'profile' ? null : 'profile')}
@@ -190,14 +198,14 @@ export default function Header({
           tw:shared-base:shrink-0 tw:shared-base:items-center tw:shared-base:justify-center tw:shared-base:w-[39px]
           tw:shared-base:h-[39px] tw:shared-base:rounded-[50%] tw:shared-base:[color:#206c62]
           tw:shared-base:[background:linear-gradient(140deg,_#e3f4ee,_#c9e7e0)]
-          tw:shared-base:[border:3px_solid_white] tw:shared-base:text-[16px] tw:shared-base:font-semibold">B</span>
+          tw:shared-base:[border:3px_solid_white] tw:shared-base:text-[16px] tw:shared-base:font-semibold">{account.profile.fullName.charAt(0).toUpperCase()}</span>
             <span className="profile-text tw:text-left tw:[margin:0_13px_0_0] tw:min-[1024px]:max-[1280px]:mr-1 tw:max-[768px]:hidden">
-              <strong className="tw:block tw:font-semibold tw:text-[11px]">Besufekad Ermias</strong>
-              <small className="tw:block tw:text-[11px] tw:mt-1 tw:text-text-secondary">HR Manager</small>
+              <strong className="tw:block tw:max-w-[160px] tw:truncate tw:font-semibold tw:text-[11px]">{account.profile.fullName}</strong>
+              <small className="tw:block tw:text-[11px] tw:mt-1 tw:text-text-secondary">{account.role}</small>
             </span>
             <Icon className="tw:text-[var(--text-muted)] tw:max-[768px]:hidden" name="chevron-down" size={16} />
           </button>
-          {menu === 'profile' && <AdminProfileDropdown onNavigate={navigate} />}
+          {menu === 'profile' && <AdminProfileDropdown onNavigate={navigate} account={account} />}
         </div>
       </div>
     </header>

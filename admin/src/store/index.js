@@ -14,6 +14,10 @@ import { INITIAL_REPORTS } from '../services/communications/reportService.js'
 import * as records from '../utils/validation/recordSchemas.js'
 import { attendanceSettingsSchema, leaveResponseSchema, payrollResponseSchema } from '../utils/validation/operationsSchemas.js'
 import { validateData } from '../utils/validation/schemaHelpers.js'
+import { INITIAL_GENERAL_SETTINGS, INITIAL_NOTIFICATION_SETTINGS } from '../utils/constants/settingsConstants.js'
+import { generalSettingsSchema, notificationSettingsSchema } from '../utils/validation/settingsSchemas.js'
+import { notificationReceiptsSchema } from '../utils/validation/notificationSchemas.js'
+import { adminAccountSchema } from '../utils/validation/accountSchemas.js'
 
 function initialData() {
   return structuredClone({
@@ -23,6 +27,10 @@ function initialData() {
     documents: INITIAL_DOCUMENTS, services: INITIAL_SERVICES, reports: INITIAL_REPORTS,
     attendance: INITIAL_ATTENDANCE, attendanceHeads: INITIAL_ATTENDANCE_HEADS,
     attendanceSettings: INITIAL_ATTENDANCE_SETTINGS, departmentChanges: [],
+    generalSettings: INITIAL_GENERAL_SETTINGS,
+    notificationSettings: INITIAL_NOTIFICATION_SETTINGS,
+    notificationReceipts: [],
+    adminAccount: null,
     leaveData: null, payrollData: null,
   })
 }
@@ -93,6 +101,15 @@ export const useAdminStore = create(set => ({
   setAttendanceSettings: update => set(state => ({
     attendanceSettings: checkedUpdate(attendanceSettingsSchema, update, state.attendanceSettings, 'Attendance settings'),
   })),
+  setGeneralSettings: update => set(state => ({
+    generalSettings: checkedUpdate(generalSettingsSchema, update, state.generalSettings, 'General settings'),
+  })),
+  setNotificationSettings: update => set(state => ({
+    notificationSettings: checkedUpdate(notificationSettingsSchema, update, state.notificationSettings, 'Notification settings'),
+  })),
+  setNotificationReceipts: update => set(state => ({
+    notificationReceipts: checkedUpdate(notificationReceiptsSchema, update, state.notificationReceipts, 'Notification receipts'),
+  })),
   setDepartmentChanges: update => set(state => ({
     departmentChanges: checkedUpdate(records.departmentChangesSchema, update, state.departmentChanges, 'Department history'),
   })),
@@ -103,6 +120,11 @@ export const useAdminStore = create(set => ({
     payrollData: checkedUpdate(payrollResponseSchema.nullable(), update, state.payrollData, 'Payroll data'),
   })),
   setWorkspaceClosed: workspaceClosed => set({ workspaceClosed }),
+  setAdminAccount: update => set(state => {
+    const next = typeof update === 'function' ? update(state.adminAccount) : update
+    // Store only public account fields, even if a response includes extra data.
+    return { adminAccount: adminAccountSchema.parse(next) }
+  }),
   setToast: toast => set({ toast }),
   reset: () => set({ ...initialData(), workspaceClosed: true, toast: '' }),
 }))

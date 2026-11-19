@@ -8,7 +8,10 @@ export default function AdminLayout({
   search,
   onSearch,
   onNavigate,
-  announcementCount,
+  notifications,
+  notificationSettings,
+  account,
+  onOpenNotification,
   activePage = 'dashboard',
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -51,15 +54,18 @@ export default function AdminLayout({
           tw:shared-base:[transform:translateY(-180%)] tw:[:where(&):focus]:[transform:translateY(0)]">
         Skip to main content
       </a>
-      <Sidebar onNavigate={navigate} activePage={activePage} />
+      <Sidebar onNavigate={navigate} activePage={activePage} account={account} />
       <div className="workspace tw:ml-[var(--sidebar-width)] tw:min-w-0 tw:max-[1024px]:ml-0">
         <Header
           search={search}
           onSearch={onSearch}
           onMenu={() => setDrawerOpen(true)}
           onNavigate={navigate}
-          announcementCount={announcementCount}
+          notifications={notifications}
+          notificationSettings={notificationSettings}
+          onOpenNotification={onOpenNotification}
           activePage={activePage}
+          account={account}
         />
         <main id="main-content" className={`main-content tw:max-w-[1660px] tw:p-[28px_30px_0] tw:mx-[auto] tw:focus:outline-none
           tw:min-[1024px]:max-[1280px]:p-[24px_22px_0] tw:max-[1024px]:p-[25px_22px_0]
@@ -73,7 +79,7 @@ export default function AdminLayout({
           onClose={() => setDrawerOpen(false)}
           drawer
         >
-          <Sidebar mobile onNavigate={navigate} activePage={activePage} />
+          <Sidebar mobile onNavigate={navigate} activePage={activePage} account={account} />
         </Modal>
       )}
     </div>

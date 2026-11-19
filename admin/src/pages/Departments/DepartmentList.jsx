@@ -9,6 +9,7 @@ import ConfirmationModal from '../../components/common/ConfirmationModal.jsx'
 import DepartmentTable from '../../components/departments/DepartmentTable.jsx'
 import DepartmentModal from '../../components/departments/DepartmentModal.jsx'
 import DepartmentDistributionChart from '../../components/dashboard/DepartmentDistributionChart.jsx'
+import { formatTimestamp } from '../../utils/formatters/formatTime.js'
 
 const colors = [
   '#087f6d',
@@ -354,13 +355,7 @@ export default function DepartmentList({
                         <strong className="tw:text-[10px] tw:font-[600]">{change.title}</strong>
                         <p className="tw:text-[10px] tw:text-[var(--text-muted)]">{change.description}</p>
                         <time className="tw:text-[9px] tw:text-[var(--text-muted)]" dateTime={change.time}>
-                          {new Intl.DateTimeFormat('en-GB', {
-                            timeZone: 'Africa/Nairobi',
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          }).format(new Date(change.time))}{' '}
+                          {formatTimestamp(change.time, { year: undefined })}{' '}
                           · EAT
                         </time>
                       </div>

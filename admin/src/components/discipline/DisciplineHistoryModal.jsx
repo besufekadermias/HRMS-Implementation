@@ -2,10 +2,7 @@ import Button from '../common/Button.jsx'
 import Modal, { ModalActions } from '../common/Modal.jsx'
 import Icon from '../common/Icon.jsx'
 import formatDate from '../../utils/formatters/formatDate.js'
-
-const eventTime = new Intl.DateTimeFormat('en-GB', {
-  timeZone: 'Africa/Nairobi', dateStyle: 'medium', timeStyle: 'short',
-})
+import { formatTimestamp } from '../../utils/formatters/formatTime.js'
 
 export default function DisciplineHistoryModal({ history, onClose }) {
   return (
@@ -24,7 +21,7 @@ export default function DisciplineHistoryModal({ history, onClose }) {
           </span>
           <div>
             <div className="discipline-history-heading tw:flex tw:gap-[10px] tw:flex-wrap tw:justify-between tw:mb-[6px]
-          tw:[&_time]:text-[11px] tw:[&_time]:[color:var(--text-muted)]"><strong>{entry.action}</strong><time dateTime={entry.at}>{eventTime.format(new Date(entry.at))}</time></div>
+          tw:[&_time]:text-[11px] tw:[&_time]:[color:var(--text-muted)]"><strong>{entry.action}</strong><time dateTime={entry.at}>{formatTimestamp(entry.at)}</time></div>
             <p><strong>{entry.record.employeeName}</strong> · {entry.record.employeeId}</p>
             <p>{entry.record.violationType} · {entry.record.penaltyAction} · Incident {formatDate(entry.record.incidentDate)}</p>
             <p>{entry.record.department}</p>

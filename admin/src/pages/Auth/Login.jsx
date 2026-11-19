@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { loginSchema } from '../../utils/validation/authSchema.js'
-import { DEMO_LOGIN } from '../../services/auth/authService.js'
+import { getDemoAccount, getDemoLogin } from '../../services/auth/authService.js'
 
 export default function Login({ onSignIn }) {
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm({
@@ -11,6 +11,7 @@ export default function Login({ onSignIn }) {
   })
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
+  const account = getDemoAccount()
 
   async function submit(values) {
     setError('')
@@ -23,7 +24,7 @@ export default function Login({ onSignIn }) {
   }
 
   function fillDemoAccount() {
-    reset({ email: DEMO_LOGIN.email, password: DEMO_LOGIN.password })
+    reset(getDemoLogin())
     setShowPassword(false)
     setError('')
   }
@@ -91,10 +92,10 @@ export default function Login({ onSignIn }) {
 
         <button className="tw:mt-3 tw:w-full tw:rounded-md tw:border tw:border-solid tw:border-primary tw:bg-surface tw:p-3 tw:font-semibold
           tw:text-primary tw:hover:bg-icon-bg" type="button" onClick={fillDemoAccount} disabled={isSubmitting}>
-          Use demo account
+          {account.passwordChangedAt ? 'Use current demo email' : 'Use demo account'}
         </button>
-        <p className="tw:mt-4 tw:text-center tw:text-[11px] tw:leading-[1.6] tw:text-text-secondary">Demo only · Besufekad Ermias, HR Manager</p>
-        <p className="tw:mt-4 tw:text-center tw:text-[11px] tw:leading-[1.6] tw:text-text-secondary">Forgot your password? Contact your administrator.</p>
+        <p className="tw:mt-4 tw:text-center tw:text-[11px] tw:leading-[1.6] tw:text-text-secondary">Demo only · {account.profile.fullName}, {account.role}</p>
+        <p className="tw:mt-4 tw:text-center tw:text-[11px] tw:leading-[1.6] tw:text-text-secondary">{account.passwordChangedAt ? 'Enter the password you saved in this tab. Reload to restore the original demo account.' : 'Reloading restores the original demo account. Live password recovery requires backend integration.'}</p>
       </section>
     </main>
   )

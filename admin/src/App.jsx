@@ -1,10 +1,12 @@
 import Card from './components/common/Card.jsx'
 import Button, { IconButton } from './components/common/Button.jsx'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAdminStore } from './store/index.js'
 import AdminLayout from './layouts/main/AdminLayout.jsx'
 import Login from './pages/Auth/Login.jsx'
-import { signIn } from './services/auth/authService.js'
+import { signIn, signOut, saveAdminProfile, saveAccountSecurity } from './services/auth/authService.js'
+import AdminAccount from './pages/Account/AdminAccount.jsx'
+import { saveGeneralSettings, saveNotificationSettings } from './services/settings/settingsService.js'
 import Dashboard from './pages/Dashboard/Dashboard.jsx'
 import EmployeeDirectory from './pages/Employees/EmployeeDirectory.jsx'
 import AddEmployee from './pages/Employees/AddEmployee.jsx'
@@ -27,6 +29,10 @@ import Announcements from './pages/Announcements/Announcements.jsx'
 import Reports from './pages/Reports/Reports.jsx'
 import Documents from './pages/Documents/Documents.jsx'
 import Services from './pages/Services/Services.jsx'
+import MainSettings from './pages/Settings/MainSettings.jsx'
+import Notifications from './pages/Notifications/Notifications.jsx'
+import NotificationDetails from './pages/Notifications/NotificationDetails.jsx'
+import { buildWorkspaceNotifications, filterNotificationPreferences, notificationTarget, updateNotificationReceipts } from './services/communications/notificationService.js'
 import PostAnnouncementModal from './components/announcements/PostAnnouncementModal.jsx'
 import DashboardActionDialog from './components/dashboard/DashboardActionDialog.jsx'
 import ConfirmationModal from './components/common/ConfirmationModal.jsx'
@@ -60,22 +66,27 @@ import {
 function readRoute() {
   if (typeof window === 'undefined') return { page: 'dashboard' }
   try {
-    const parts = window.location.hash.replace(/^#\/?/, '').split('/')
+    const [pathname, query = ''] = window.location.hash.replace(/^#\/?/, '').split('?')
+    const parts = pathname.split('/')
+    const recordId = new URLSearchParams(query).get('record') || undefined
+    if (parts[0] === 'notifications') return { page: 'notifications' }
+    if (parts[0] === 'profile') return { page: 'profile', section: parts[1] === 'security' ? 'security' : 'profile' }
+    if (parts[0] === 'settings') return { page: 'settings', section: parts[1] === 'notifications' ? 'notifications' : 'general' }
     if (parts[0] === 'services') return { page: 'services' }
     if (parts[0] === 'documents') return { page: 'documents' }
     if (parts[0] === 'reports') return { page: 'reports' }
-    if (['announcements', 'announcement'].includes(parts[0])) return { page: 'announcements' }
+    if (['announcements', 'announcement'].includes(parts[0])) return { page: 'announcements', recordId }
     if (parts[0] === 'recruitment') return parts[1] === 'applications'
-      ? { page: 'applicants', id: parts[2] ? decodeURIComponent(parts[2]) : undefined } : { page: 'recruitment' }
-    if (parts[0] === 'applicants') return { page: 'applicants' }
+      ? { page: 'applicants', id: parts[2] ? decodeURIComponent(parts[2]) : undefined, recordId } : { page: 'recruitment' }
+    if (parts[0] === 'applicants') return { page: 'applicants', recordId }
     if (parts[0] === 'rewards') return { page: 'rewards' }
     if (parts[0] === 'discipline') return { page: 'discipline' }
-    if (['career', 'career-tracking'].includes(parts[0])) return { page: 'career' }
+    if (['career', 'career-tracking'].includes(parts[0])) return { page: 'career', recordId }
     if (parts[0] === 'payroll') return { page: PAYROLL_PAGES.find((item) => item.href === `#/${parts.join('/')}`)?.id || 'payroll' }
     if ((parts[0] === 'leave' && parts[1] === 'settings') || parts[0] === 'leave-settings') return { page: 'leave-settings' }
     if (['leave', 'pending-leave', 'approved-leave'].includes(parts[0])) {
       const status = parts[0] === 'pending-leave' ? 'PENDING' : parts[0] === 'approved-leave' ? 'APPROVED' : parts[1]?.toUpperCase()
-      return { page: 'leave', status: ['PENDING', 'APPROVED', 'REJECTED'].includes(status) ? status : '' }
+      return { page: 'leave', status: ['PENDING', 'APPROVED', 'REJECTED'].includes(status) ? status : '', recordId }
     }
     if (parts[0] === 'attendance') {
       const attendancePage = ATTENDANCE_PAGES.find((item) => item.href === `#/${parts.join('/')}`)
@@ -97,19 +108,23 @@ function readRoute() {
 }
 
 function routeHash(route) {
+  const recordQuery = route.recordId ? `?record=${encodeURIComponent(route.recordId)}` : ''
+  if (route.page === 'notifications') return '#/notifications'
+  if (route.page === 'profile') return route.section === 'security' ? '#/profile/security' : '#/profile'
+  if (route.page === 'settings') return route.section === 'notifications' ? '#/settings/notifications' : '#/settings'
   if (route.page === 'services') return '#/services'
   if (route.page === 'documents') return '#/documents'
   if (route.page === 'reports') return '#/reports'
-  if (route.page === 'announcements') return '#/announcements'
+  if (route.page === 'announcements') return `#/announcements${recordQuery}`
   if (route.page === 'recruitment') return '#/recruitment'
-  if (route.page === 'applicants') return `#/recruitment/applications${route.id ? `/${encodeURIComponent(route.id)}` : ''}`
+  if (route.page === 'applicants') return `#/recruitment/applications${route.id ? `/${encodeURIComponent(route.id)}` : ''}${recordQuery}`
   if (route.page === 'rewards') return '#/rewards'
   if (route.page === 'discipline') return '#/discipline'
-  if (route.page === 'career') return '#/career'
+  if (route.page === 'career') return `#/career${recordQuery}`
   const payrollPage = PAYROLL_PAGES.find((item) => item.id === route.page)
   if (payrollPage) return payrollPage.href
   if (route.page === 'leave-settings') return '#/leave/settings'
-  if (route.page === 'leave') return `#/leave${route.status ? `/${route.status.toLowerCase()}` : ''}`
+  if (route.page === 'leave') return `#/leave${route.status ? `/${route.status.toLowerCase()}` : ''}${recordQuery}`
   const attendancePage = ATTENDANCE_PAGES.find((item) => item.id === route.page)
   if (attendancePage) return attendancePage.href
   if (route.page === 'grades') return '#/grades'
@@ -127,6 +142,10 @@ export default function App() {
     attendanceSettings, setAttendanceSettings, departmentChanges, setDepartmentChanges,
     announcements, setAnnouncements, documents, setDocuments, services, setServices,
     reports, attendance, attendanceHeads, toast, setToast,
+    generalSettings, setGeneralSettings,
+    notificationReceipts, setNotificationReceipts,
+    notificationSettings, setNotificationSettings,
+    adminAccount, setAdminAccount,
     workspaceClosed, setWorkspaceClosed, reset: resetAdmin,
   } = useAdminStore()
   const [route, setRoute] = useState(readRoute)
@@ -135,25 +154,32 @@ export default function App() {
   const leave = useLeave(employees, { enabled: !workspaceClosed })
   const payroll = usePayroll(employees, { enabled: !workspaceClosed })
   const career = useCareer(employees, grades, !workspaceClosed)
-  const operationSaving = leave.saving || payroll.saving
+  const notifications = useMemo(() => filterNotificationPreferences(buildWorkspaceNotifications({
+    announcements, recruitment, leaveData: leave.data, careerMilestones: career.milestones, employees,
+  }, notificationReceipts), notificationSettings), [announcements, recruitment, leave.data, career.milestones, employees, notificationReceipts, notificationSettings])
+  const [sharedSaving, setSharedSaving] = useState(false)
+  const sharedSavingRef = useRef(false)
+  const operationSaving = leave.saving || payroll.saving || sharedSaving
   const [dirty, setDirty] = useState(false)
   const [pendingRoute, setPendingRoute] = useState(null)
+  const [signedInAt, setSignedInAt] = useState(null)
 
   useEffect(() => {
     function syncRoute() {
-      if (operationSaving) {
+      if (operationSaving || sharedSavingRef.current) {
         window.history.replaceState(null, '', routeHash(route))
         setToast('Please wait for the current change to finish saving.')
         return
       }
       const next = readRoute()
-      if (dirty && routeHash(next) !== routeHash(route)) {
+      const switchingSettingsSection = ['settings', 'profile'].includes(next.page) && next.page === route.page
+      if (dirty && routeHash(next) !== routeHash(route) && !switchingSettingsSection) {
         window.history.replaceState(null, '', routeHash(route))
         setPendingRoute(next)
       } else {
         if (
           next.page !== route.page &&
-          ['departments', 'grades', 'rewards', 'discipline', 'career', 'announcements', 'reports', 'documents', 'services', 'leave', 'leave-settings', ...RECRUITMENT_PAGES.map((item) => item.id), ...PAYROLL_PAGES.map((item) => item.id), ...ATTENDANCE_PAGES.map((item) => item.id)].some((page) =>
+          ['departments', 'grades', 'rewards', 'discipline', 'career', 'announcements', 'reports', 'documents', 'services', 'settings', 'notifications', 'profile', 'leave', 'leave-settings', ...RECRUITMENT_PAGES.map((item) => item.id), ...PAYROLL_PAGES.map((item) => item.id), ...ATTENDANCE_PAGES.map((item) => item.id)].some((page) =>
             [next.page, route.page].includes(page),
           )
         )
@@ -187,25 +213,50 @@ export default function App() {
   }, [toast, setToast])
 
   function go(next) {
-    if (leave.isSaving() || payroll.isSaving()) return
+    if (leave.isSaving() || payroll.isSaving() || sharedSavingRef.current) return
+    const { notificationId, ...destination } = next
+    if (notificationId) {
+      const notification = notifications.find(item => item.id === notificationId)
+      if (notification) handleReadNotification(notification)
+    }
     setDirty(false)
     setPendingRoute(null)
     setAction(null)
+    if (destination.recordId) setSearch('')
     if (
       next.page !== route.page &&
-      ['departments', 'grades', 'rewards', 'discipline', 'career', 'announcements', 'reports', 'documents', 'services', 'leave', 'leave-settings', ...RECRUITMENT_PAGES.map((item) => item.id), ...PAYROLL_PAGES.map((item) => item.id), ...ATTENDANCE_PAGES.map((item) => item.id)].some((page) =>
+      ['departments', 'grades', 'rewards', 'discipline', 'career', 'announcements', 'reports', 'documents', 'services', 'settings', 'notifications', 'profile', 'leave', 'leave-settings', ...RECRUITMENT_PAGES.map((item) => item.id), ...PAYROLL_PAGES.map((item) => item.id), ...ATTENDANCE_PAGES.map((item) => item.id)].some((page) =>
         [next.page, route.page].includes(page),
       )
     )
       setSearch('')
-    setRoute(next)
-    window.history.pushState(null, '', routeHash(next))
+    setRoute(destination)
+    window.history.pushState(null, '', routeHash(destination))
     window.scrollTo({ top: 0, behavior: 'instant' })
   }
 
-  function navigate(page, id) {
-    if (leave.isSaving() || payroll.isSaving()) {
+  function selectSettingsSection(section) {
+    if (leave.isSaving() || payroll.isSaving() || sharedSavingRef.current) {
       setToast('Please wait for the current change to finish saving.')
+      return
+    }
+    const next = { page: 'settings', section: section === 'notifications' ? 'notifications' : 'general' }
+    if (routeHash(next) === routeHash(route)) return
+    // Both panels remain mounted, so switching sections keeps their drafts.
+    setRoute(next)
+    window.history.pushState(null, '', routeHash(next))
+  }
+
+  function navigate(page, id) {
+    if (leave.isSaving() || payroll.isSaving() || sharedSavingRef.current) {
+      setToast('Please wait for the current change to finish saving.')
+      return
+    }
+    if (page === 'settings' || page === 'notification-settings') {
+      const section = page === 'notification-settings' ? 'notifications' : 'general'
+      if (route.page === 'settings') selectSettingsSection(section)
+      else if (dirty) setPendingRoute({ page: 'settings', section })
+      else go({ page: 'settings', section })
       return
     }
     if (['pending-leave', 'approved-leave'].includes(page)) {
@@ -230,6 +281,9 @@ export default function App() {
         'reports',
         'documents',
         'services',
+        'settings',
+        'notifications',
+        'profile',
         'leave',
         'leave-settings',
         ...RECRUITMENT_PAGES.map((item) => item.id),
@@ -377,6 +431,45 @@ export default function App() {
     setToast('Attendance settings saved.')
   }
 
+  async function handleSaveSharedData(values, save, commit, message) {
+    if (sharedSavingRef.current) throw new Error('A change is already being saved.')
+    sharedSavingRef.current = true
+    setSharedSaving(true)
+    try {
+      const saved = await save(values)
+      commit(saved)
+      setToast(message)
+      return saved
+    } finally {
+      sharedSavingRef.current = false
+      setSharedSaving(false)
+    }
+  }
+
+  function handleSaveGeneralSettings(values) {
+    return handleSaveSharedData(values, saveGeneralSettings, setGeneralSettings, 'General settings saved.')
+  }
+
+  function handleSaveNotificationSettings(values) {
+    return handleSaveSharedData(values, saveNotificationSettings, setNotificationSettings, 'Notification settings saved.')
+  }
+
+  function handleSaveProfile(values) {
+    return handleSaveSharedData(values, saveAdminProfile, setAdminAccount, 'Profile saved.')
+  }
+
+  function handleSaveAccount(values) {
+    return handleSaveSharedData(values, saveAccountSecurity, setAdminAccount, 'Account changes saved for this browser tab.')
+  }
+
+  function selectAccountSection(section) {
+    if (operationSaving || sharedSavingRef.current) return
+    const next = { page: 'profile', section: section === 'security' ? 'security' : 'profile' }
+    if (routeHash(next) === routeHash(route)) return
+    setRoute(next)
+    window.history.pushState(null, '', routeHash(next))
+  }
+
   function handleGrantReward(values) {
     setRewards(grantReward(rewards, employees, values))
     setSearch('')
@@ -389,7 +482,7 @@ export default function App() {
   }
 
   function handlePostAnnouncement(values) {
-    setAnnouncements(postAnnouncement(announcements, values))
+    setAnnouncements(postAnnouncement(announcements, values, adminAccount.profile.fullName))
     setSearch('')
     setToast('Announcement saved.')
     go({ page: 'announcements' })
@@ -481,24 +574,56 @@ export default function App() {
     setToast('Leave entitlement updated.')
   }
 
-  function closeWorkspace() {
-    if (leave.isSaving() || payroll.isSaving()) return
-    leave.reset()
-    payroll.reset()
-    career.reset()
-    resetAdmin()
-    setSearch('')
-    setDirty(false)
-    setPendingRoute(null)
-    setAction(null)
-    setRoute({ page: 'dashboard' })
-    window.history.replaceState(null, '', '#/login')
+  async function closeWorkspace() {
+    if (leave.isSaving() || payroll.isSaving() || sharedSavingRef.current) return
+    sharedSavingRef.current = true
+    setSharedSaving(true)
+    try {
+      await signOut()
+      leave.reset()
+      payroll.reset()
+      career.reset()
+      resetAdmin()
+      setSearch('')
+      setDirty(false)
+      setPendingRoute(null)
+      setAction(null)
+      setSignedInAt(null)
+      setRoute({ page: 'dashboard' })
+      window.history.replaceState(null, '', '#/login')
+    } catch (error) {
+      setToast(error.message || 'Unable to sign out. Please try again.')
+    } finally {
+      sharedSavingRef.current = false
+      setSharedSaving(false)
+    }
   }
 
   async function openWorkspace(values) {
-    await signIn(values)
+    const session = await signIn(values)
+    setAdminAccount(session.account)
+    setSignedInAt(session.signedInAt)
     setWorkspaceClosed(false)
     window.history.replaceState(null, '', routeHash(route))
+  }
+
+  function handleReadNotification(notification, read = true) {
+    setNotificationReceipts(current => updateNotificationReceipts(current, [notification], { read }))
+  }
+
+  function handleOpenNotification(notification) {
+    if (leave.isSaving() || payroll.isSaving() || sharedSavingRef.current) {
+      setToast('Please wait for the current change to finish saving.')
+      return
+    }
+    const next = { ...notificationTarget(notification), notificationId: notification.id }
+    if (dirty) setPendingRoute(next)
+    else go(next)
+  }
+
+  function handleReadAllNotifications() {
+    setNotificationReceipts(current => updateNotificationReceipts(current, notifications, { read: true }))
+    setToast('All notifications marked as read.')
   }
 
   if (workspaceClosed) return <Login onSignIn={openWorkspace} />
@@ -515,6 +640,19 @@ export default function App() {
         onNavigate={navigate}
       />
     )
+  else if (route.page === 'notifications')
+    content = <Notifications notifications={notifications} search={search} onSearch={setSearch}
+      notificationSettings={notificationSettings} onNavigate={navigate}
+      onOpen={handleOpenNotification} onRead={handleReadNotification} onReadAll={handleReadAllNotifications}
+      leaveLoading={leave.loading} leaveBusy={leave.loading || operationSaving} leaveError={leave.loadError} onRetryLeave={leave.data ? leave.retryRefresh : leave.reload} />
+  else if (route.page === 'settings')
+    content = <MainSettings settings={generalSettings} notificationSettings={notificationSettings} busy={operationSaving}
+      section={route.section} onSectionChange={selectSettingsSection}
+      onSave={handleSaveGeneralSettings} onSaveNotifications={handleSaveNotificationSettings} onDirtyChange={setDirty} />
+  else if (route.page === 'profile')
+    content = <AdminAccount account={adminAccount} companyName={generalSettings.companyName} signedInAt={signedInAt}
+      section={route.section} onSectionChange={selectAccountSection} busy={operationSaving} onNavigate={navigate}
+      onSaveProfile={handleSaveProfile} onSaveSecurity={handleSaveAccount} onDirtyChange={setDirty} />
   else if (route.page === 'reports')
     content = <Reports reports={reports} search={search} onSearch={setSearch} />
   else if (route.page === 'documents')
@@ -681,7 +819,10 @@ export default function App() {
       onSearch={setSearch}
       onNavigate={navigate}
       activePage={route.page}
-      announcementCount={announcements.length}
+      account={adminAccount}
+      notifications={notifications}
+      notificationSettings={notificationSettings}
+      onOpenNotification={handleOpenNotification}
     >
       {['leave', 'leave-settings'].includes(route.page) && leave.data && leave.loadError && (
         <Card className="form-error tw:shared-base:mt-[16px] tw:shared-base:text-[13px] tw:shared-base:rounded-[5px]
@@ -694,6 +835,13 @@ export default function App() {
         </Card>
       )}
       {content}
+      {route.recordId && ['announcements', 'applicants', 'leave', 'career'].includes(route.page) && <NotificationDetails
+        key={routeHash(route)} route={route} announcements={announcements} recruitment={recruitment} departments={departments}
+        leaveData={leave.data} leaveLoading={leave.loading} leaveError={leave.loadError} onRetryLeave={leave.reload}
+        milestones={career.milestones} employees={employees} busy={operationSaving}
+        onClose={() => go({ ...route, recordId: undefined })} onDirtyChange={setDirty}
+        onDeleteAnnouncement={handleDeleteAnnouncement} onDecideApplication={handleApplicationDecision}
+        onDecideLeave={handleLeaveDecision} onCancelCareer={handleCancelCareerMilestone} />}
       {action === 'announcement' && <PostAnnouncementModal onSave={handlePostAnnouncement}
         onClose={() => { setAction(null); setDirty(false) }} onDirtyChange={setDirty} />}
       {action && action !== 'announcement' && (
@@ -703,6 +851,7 @@ export default function App() {
           employees={employees}
           onClose={() => setAction(null)}
           onLogout={closeWorkspace}
+          busy={operationSaving}
         />
       )}
       {pendingRoute && (

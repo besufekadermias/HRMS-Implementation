@@ -1,6 +1,7 @@
 import Card from '../../components/common/Card.jsx'
 import Icon from '../../components/common/Icon.jsx'
 import AttendanceSettingsForm from '../../components/attendance/AttendanceSettingsForm.jsx'
+import formatTime from '../../utils/formatters/formatTime.js'
 
 export default function AttendanceSettings({ settings, onSave, onDirtyChange }) {
   const ipCount = settings.allowedIps ? settings.allowedIps.split('\n').length : 0
@@ -38,12 +39,12 @@ export default function AttendanceSettings({ settings, onSave, onDirtyChange }) 
           tw:[&_p]:text-[11px] tw:[&_p]:leading-[1.8] tw:[&_p+p]:mt-[12px]" aria-label="Saved attendance configuration">
           <h2><Icon name="check-circle" size={18} /> Saved Settings</h2>
           <dl>
-            <div><dt>Start time</dt><dd>{settings.startTime}</dd></div>
-            <div><dt>End time</dt><dd>{settings.endTime}</dd></div>
+            <div><dt>Start time</dt><dd>{formatTime(settings.startTime)}</dd></div>
+            <div><dt>End time</dt><dd>{formatTime(settings.endTime)}</dd></div>
             <div><dt>Grace period</dt><dd>{settings.gracePeriod} minutes</dd></div>
             <div><dt>Approved IPs</dt><dd>{ipCount}</dd></div>
           </dl>
-          <p>Times are shown in 24-hour format, East Africa Time (UTC+3).</p>
+          <p>Times are shown in East Africa Time (UTC+3), using your saved display preference.</p>
         </Card>
       </div>
     </div>
