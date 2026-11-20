@@ -2,7 +2,7 @@ import Card from '../common/Card.jsx'
 import Icon from '../common/Icon.jsx'
 import { OPERATIONS } from '../../utils/constants/constants.js'
 
-export default function QuickActions({ onAction, leaveSummary }) {
+export default function QuickActions({ onAction, descriptions }) {
   return (
     <Card className={`quick-actions tw:[.dashboard-middle>&]:p-[18px_16px] tw:p-[22px_17px_18px]
             tw:min-[768px]:max-[1280px]:[.dashboard-middle>&]:[grid-column:1_/_-1]
@@ -43,11 +43,7 @@ export default function QuickActions({ onAction, leaveSummary }) {
             </span>
             <span className="operation-text tw:block tw:min-w-[0] tw:flex-[1]">
               <strong className="tw:block tw:text-[11px] tw:font-[600] tw:leading-[1.5] tw:max-[768px]:text-[12px]">{item.title}</strong>
-              <small className="tw:block tw:text-[10px] tw:leading-[1.4] tw:text-[var(--text-muted)] tw:mt-[2px] tw:max-[768px]:text-[11px]">{leaveSummary && item.id === 'pending-leave'
-                ? `${leaveSummary.pending} requests awaiting your review`
-                : leaveSummary && item.id === 'approved-leave'
-                  ? `${leaveSummary.approved} approved leave requests`
-                  : item.description}</small>
+              <small className="tw:block tw:text-[10px] tw:leading-[1.4] tw:text-[var(--text-muted)] tw:mt-[2px] tw:max-[768px]:text-[11px]">{descriptions[item.id] ?? item.description}</small>
             </span>
             <Icon className="tw:text-[#7b98a7]" name="chevron" size={16} />
           </button>

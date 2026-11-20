@@ -42,7 +42,6 @@ import {
   PAYROLL_PAGES,
   RECRUITMENT_PAGES,
 } from './utils/constants/constants.js'
-import { summarizeLeave } from './services/operations/leaveService.js'
 import useLeave from './hooks/operations/useLeave.js'
 import usePayroll from './hooks/operations/usePayroll.js'
 import { saveJob, toggleJobStatus, decideApplication } from './services/recruitment/recruitmentService.js'
@@ -52,7 +51,7 @@ import { postAnnouncement, deleteAnnouncement } from './services/communications/
 import { publishDocument, deleteDocument } from './services/communications/documentService.js'
 import { saveService, deleteService } from './services/communications/publicServiceService.js'
 import { recordDisciplinaryAction, deleteDisciplinaryAction, remapDisciplineEmployee, removeEmployeeDiscipline } from './services/growth/disciplineService.js'
-import { todayInNairobi } from './utils/validation/validators.js'
+import { buildDashboardSummary } from './services/dashboard/dashboardService.js'
 import {
   saveDepartment,
   deleteDepartment,
@@ -629,12 +628,16 @@ export default function App() {
   if (workspaceClosed) return <Login onSignIn={openWorkspace} />
 
   const employee = employees.find((item) => item.id === route.id)
+  const dashboardSummary = route.page === 'dashboard' ? buildDashboardSummary({
+    employees, departments, recruitment, leaveData: leave.data, payrollData: payroll.data,
+    attendance, attendanceHeads,
+  }) : null
   let content
   if (route.page === 'dashboard')
     content = (
       <Dashboard
         employees={employees}
-        leaveSummary={leave.data ? summarizeLeave(leave.data.requests, todayInNairobi()) : { pending: '—', approved: '—' }}
+        summary={dashboardSummary}
         search={search}
         onSearch={setSearch}
         onNavigate={navigate}

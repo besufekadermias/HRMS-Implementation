@@ -6,10 +6,14 @@ import AttendanceSummaryChart from '../../components/dashboard/AttendanceSummary
 import DepartmentDistributionChart from '../../components/dashboard/DepartmentDistributionChart.jsx'
 import QuickActions from '../../components/dashboard/QuickActions.jsx'
 import EmployeeTable from '../../components/employees/EmployeeTable.jsx'
-import { SNAPSHOT_DATE } from '../../utils/constants/constants.js'
 import formatDate from '../../utils/formatters/formatDate.js'
+import { USE_DEMO_DASHBOARD_ATTENDANCE, DEMO_DASHBOARD_ATTENDANCE } from '../../utils/constants/constants.js'
 
-export default function Dashboard({ employees, search, onSearch, onNavigate, leaveSummary }) {
+export default function Dashboard({ employees, summary, search, onSearch, onNavigate }) {
+  const attendanceDays = USE_DEMO_DASHBOARD_ATTENDANCE && !summary.attendanceDays.some(day => day.hasData)
+    ? summary.attendanceDays.map((day, index) => ({ ...day, ...DEMO_DASHBOARD_ATTENDANCE[index], hasData: true }))
+    : summary.attendanceDays
+
   return (
     <>
       <div className={`dashboard-intro tw:flex tw:items-center tw:justify-between tw:gap-[22px] tw:mb-[25px]
@@ -37,7 +41,7 @@ export default function Dashboard({ employees, search, onSearch, onNavigate, lea
           tw:max-[768px]:text-[10px]">
             <Icon name="calendar" size={16} />
             <span>
-              {formatDate(SNAPSHOT_DATE, { weekday: 'short' })}
+              {formatDate(summary.date, { weekday: 'short' })}
               <small className="tw:block tw:text-right tw:text-[var(--text-muted)] tw:text-[10px] tw:mt-[4px] tw:max-[768px]:text-[9px]">As of</small>
             </span>
           </div>
@@ -51,15 +55,15 @@ export default function Dashboard({ employees, search, onSearch, onNavigate, lea
           </Button>
         </div>
       </div>
-      <WorkforceStats employeeCount={employees.length} />
+      <WorkforceStats summary={summary} />
       <div className="dashboard-middle tw:grid tw:grid-cols-[minmax(0,_44.8fr)_minmax(0,_32.2fr)_minmax(0,_23fr)] tw:gap-[15px]
           tw:mb-[20px] tw:min-[768px]:max-[1280px]:grid-cols-[minmax(0,_1.2fr)_minmax(0,_1fr)]
           tw:min-[1024px]:max-[1280px]:grid-cols-[minmax(0,_1.2fr)_minmax(0,_1fr)]
           tw:min-[1024px]:max-[1280px]:gap-[15px] tw:max-[1024px]:grid-cols-[minmax(0,_1.2fr)_minmax(0,_1fr)]
           tw:max-[768px]:grid-cols-[minmax(0,_1fr)] tw:max-[768px]:gap-[16px] tw:max-[768px]:mb-[16px]">
-        <AttendanceSummaryChart onViewLog={() => onNavigate('attendance')} />
-        <DepartmentDistributionChart />
-        <QuickActions onAction={onNavigate} leaveSummary={leaveSummary} />
+        <AttendanceSummaryChart attendanceDays={attendanceDays} onViewLog={() => onNavigate('attendance')} />
+        <DepartmentDistributionChart data={summary.departmentDistribution} />
+        <QuickActions onAction={onNavigate} descriptions={summary.quickActionDescriptions} />
       </div>
       <Card
         className="roster-card tw:p-[22px_23px_0] tw:scroll-mt-[90px] tw:max-[768px]:p-[20px_17px_0]"

@@ -392,6 +392,22 @@ export const INITIAL_ATTENDANCE = [
   },
 ];
 
+// TEMPORARY dashboard chart samples, ordered oldest to newest.
+// These are illustrative counts, not employee attendance records.
+// Backend handoff: set this switch to false when server attendance is connected.
+// Dashboard uses these only when its entire current seven-day window has no data.
+// Dates still come from today's date; these samples are never saved to the store.
+export const USE_DEMO_DASHBOARD_ATTENDANCE = true;
+export const DEMO_DASHBOARD_ATTENDANCE = [
+  { present: 39, absent: 10, late: 6 },
+  { present: 35, absent: 14, late: 7 },
+  { present: 37, absent: 10, late: 6 },
+  { present: 34, absent: 11, late: 5 },
+  { present: 40, absent: 14, late: 7 },
+  { present: 37, absent: 10, late: 6 },
+  { present: 42, absent: 14, late: 5 },
+];
+
 export const ATTENDANCE = [
   {
     key: "present",

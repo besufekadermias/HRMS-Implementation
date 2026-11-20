@@ -2,17 +2,8 @@ import Card from '../common/Card.jsx'
 import { TextButton } from '../common/Button.jsx'
 import { useId, useState } from 'react'
 import Icon from '../common/Icon.jsx'
+import formatDate from '../../utils/formatters/formatDate.js'
 
-// Illustrative values read from the teal design, not live attendance records.
-const attendanceDays = [
-  { date: 'Oct 19', present: 39, absent: 10, late: 6 },
-  { date: 'Oct 20', present: 35, absent: 14, late: 7 },
-  { date: 'Oct 21', present: 37, absent: 10, late: 6 },
-  { date: 'Oct 22', present: 34, absent: 11, late: 5 },
-  { date: 'Oct 23', present: 40, absent: 14, late: 7 },
-  { date: 'Oct 24', present: 37, absent: 10, late: 6 },
-  { date: 'Oct 25', present: 42, absent: 14, late: 5 },
-]
 const series = [
   { key: 'present', label: 'Present', color: '#00b56b' },
   { key: 'absent', label: 'Absent', color: '#ff3e68' },
@@ -21,14 +12,19 @@ const series = [
 const x = (index) => 12 + index * 96
 const y = (value) => 200 - (value / 50) * 190
 
-export default function AttendanceSummaryChart({ onViewLog }) {
+export default function AttendanceSummaryChart({ attendanceDays, onViewLog }) {
   const [activeDay, setActiveDay] = useState(null)
   const chartId = useId()
   const areaId = `${chartId}-area`
   const tooltipId = `${chartId}-tooltip`
-  const presentPoints = attendanceDays
-    .map((day, index) => `${x(index)},${y(day.present)}`)
-    .join(' ')
+  // Separate recorded days into segments so missing records do not become zeros.
+  const segments = []
+  attendanceDays.forEach((day, index) => {
+    if (!day.hasData) return
+    if (index === 0 || !attendanceDays[index - 1].hasData) segments.push([])
+    segments.at(-1).push({ ...day, index })
+  })
+  const dayLabel = date => formatDate(date, { year: undefined, month: 'short', day: 'numeric' })
 
   return (
     <Card
@@ -113,15 +109,18 @@ export default function AttendanceSummaryChart({ onViewLog }) {
                 vectorEffect="non-scaling-stroke"
               />
             ))}
-            <polygon
-              points={`12,200 ${presentPoints} 588,200`}
-              fill={`url(#${areaId})`}
-            />
-            {series.map((item) => (
+            {segments.map(segment => (
+              <polygon
+                key={segment[0].date}
+                points={`${x(segment[0].index)},200 ${segment.map(day => `${x(day.index)},${y(day.present)}`).join(' ')} ${x(segment.at(-1).index)},200`}
+                fill={`url(#${areaId})`}
+              />
+            ))}
+            {series.flatMap(item => segments.map(segment => (
               <polyline
-                key={item.key}
-                points={attendanceDays
-                  .map((day, index) => `${x(index)},${y(day[item.key])}`)
+                key={`${item.key}-${segment[0].date}`}
+                points={segment
+                  .map(day => `${x(day.index)},${y(day[item.key])}`)
                   .join(' ')}
                 fill="none"
                 stroke={item.color}
@@ -129,7 +128,7 @@ export default function AttendanceSummaryChart({ onViewLog }) {
                 strokeLinejoin="round"
                 vectorEffect="non-scaling-stroke"
               />
-            ))}
+            )))}
           </svg>
           {attendanceDays.map((day, index) => (
             <button
@@ -142,7 +141,9 @@ export default function AttendanceSummaryChart({ onViewLog }) {
           tw:focus-visible:before:absolute tw:focus-visible:before:left-[50%] tw:focus-visible:before:top-[10px]
           tw:focus-visible:before:bottom-[10px] tw:focus-visible:before:[border-left:1px_dashed_#bfd5d0] `}
               style={{ left: `${x(index) / 6}%` }}
-              aria-label={`${day.date}: ${day.present} present, ${day.absent} absent, ${day.late} late`}
+              aria-label={day.hasData
+                ? `${dayLabel(day.date)}: ${day.present} present, ${day.absent} absent, ${day.late} late`
+                : `${dayLabel(day.date)}: No attendance records`}
               aria-describedby={activeDay === index ? tooltipId : undefined}
               onMouseEnter={() => setActiveDay(index)}
               onFocus={() => setActiveDay(index)}
@@ -152,7 +153,7 @@ export default function AttendanceSummaryChart({ onViewLog }) {
                 if (event.key === 'Escape') setActiveDay(null)
               }}
             >
-              {series.map((item) => (
+              {day.hasData && series.map((item) => (
                 <span
                   key={item.key}
                   className="attendance-point tw:absolute tw:left-[50%] tw:[transform:translate(-50%,_-50%)] tw:w-[6px] tw:h-[6px]
@@ -176,12 +177,12 @@ export default function AttendanceSummaryChart({ onViewLog }) {
                 left: `clamp(85px, ${x(activeDay) / 6}%, calc(100% - 85px))`,
               }}
             >
-              <strong className="tw:block tw:mb-[9px]">{attendanceDays[activeDay].date}</strong>
+              <strong className="tw:block tw:mb-[9px]">{dayLabel(attendanceDays[activeDay].date)}{!attendanceDays[activeDay].hasData && ' · No data'}</strong>
               {series.map((item) => (
                 <span className="tw:flex tw:items-center tw:gap-[7px] tw:mt-[6px] tw:text-[var(--text-secondary)]" key={item.key}>
                   <i className="tw:w-[7px] tw:h-[7px] tw:shrink-[0] tw:rounded-[50%]" style={{ background: item.color }} />
                   {item.label}
-                  <b className="tw:ml-[auto]">{attendanceDays[activeDay][item.key]}</b>
+                  <b className="tw:ml-[auto]">{attendanceDays[activeDay].hasData ? attendanceDays[activeDay][item.key] : '—'}</b>
                 </span>
               ))}
             </div>
@@ -189,14 +190,14 @@ export default function AttendanceSummaryChart({ onViewLog }) {
         </div>
         <div className="attendance-x-axis tw:[grid-column:2] tw:flex tw:justify-between tw:text-[var(--text-secondary)] tw:text-[10px]" aria-hidden="true">
           {attendanceDays.map((day) => (
-            <span key={day.date}>{day.date}</span>
+            <span key={day.date}>{dayLabel(day.date)}</span>
           ))}
         </div>
       </div>
       <div className={`attendance-overview-footer tw:[.dashboard-middle_&]:flex-wrap tw:[.dashboard-middle_&]:gap-[4px_10px] tw:flex
           tw:items-center tw:justify-between tw:gap-[12px] tw:pt-[10px] tw:max-[480px]:flex-wrap
           tw:max-[480px]:gap-[4px] `}>
-        <span className="tw:text-[10px] tw:text-[var(--text-muted)]">Oct 19–25, 2025</span>
+        <span className="tw:text-[10px] tw:text-[var(--text-muted)]">{dayLabel(attendanceDays[0].date)}–{formatDate(attendanceDays[6].date, { month: 'short', day: 'numeric' })}</span>
         <TextButton onClick={onViewLog}>
           View Full Log
           <Icon name="arrow" size={17} />
