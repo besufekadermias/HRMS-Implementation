@@ -4,10 +4,11 @@ import { getLeaveYear } from '../utils/helpers/leaveRules.js'
 
 // Account, profile, payroll, attendance, and announcements
 
-export const DEMO_LOGIN = { identifier: 'employee@hadiya.gov.et', password: 'HRMS-demo-2026' }
+// Matches the employee named Tedwodros Kifle (T2323) in admin's demo records.
+export const DEMO_LOGIN = { identifier: 'tiblet', password: 'HRMS-demo-2026' }
 export const DEMO_EMPLOYEE = {
   id: 'DEMO-USER-001',
-  fullName: 'Tiblet Alemayehu',
+  fullName: 'Tedwodros Kifle',
   login: DEMO_LOGIN.identifier,
   role: 'EMPLOYEE',
   department: 'Cybersecurity & Quality Assurance',

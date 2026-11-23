@@ -20,7 +20,6 @@ import BrandMark from '../../components/common/BrandMark.jsx'
 import ConfirmDiscardDialog from '../../components/common/ConfirmDiscardDialog.jsx'
 import { useEmployeeStore } from '../../store/index.js'
 import { signOut } from '../../services/auth/authService.js'
-import { USE_DEMO_API } from '../../config/api.js'
 
 const navigation = [
   ['/dashboard', 'Dashboard', LayoutDashboard],
@@ -654,7 +653,6 @@ export default function EmployeeLayout() {
     employee-page:screen-max-768:text-[length:9px] employee-page:screen-max-768:gap-[8px]`}
           >
             <span>© {new Date().getFullYear()} Hadiya Science · IT Department</span>
-            <span>{USE_DEMO_API ? 'Demo preview · Sample data' : 'Employee Portal'}</span>
           </footer>
         </main>
       </div>

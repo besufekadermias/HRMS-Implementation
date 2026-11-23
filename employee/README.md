@@ -21,6 +21,7 @@ this Windows host. Use `npm run lint` and `npm run build` for code/build checks.
 ## Demo and live API
 
 The default is an in-memory demo. Click **Use demo account**, then **Sign in**.
+The demo employee is Tedwodros Kifle (T2323), with username `tiblet`, matching admin's employee record.
 All demo implementation lives in just three files under `src/demo/`: `data.js`,
 `adapter.js`, and `payslip.js`. Reload resets the demo session and changes. Demo
 attendance actions remain disabled until real office-IP validation is connected.
