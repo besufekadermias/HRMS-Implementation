@@ -7,16 +7,6 @@ const api = axios.create({
   timeout: 10000,
 })
 
-let demoAdapter = null
-// Check the env field here so Vite drops this import before resolving demo chunks.
-if ((import.meta.env.VITE_API_MODE || 'demo') === 'demo') {
-  const { createDemoAdapter } = await import('../../demo/adapter.js')
-  demoAdapter = createDemoAdapter()
-  api.defaults.adapter = demoAdapter
-}
-export function getDemoLogin() {
-  return demoAdapter?.getLoginSuggestion() ?? null
-}
 api.interceptors.response.use(
   (response) => response,
   async (error) => {

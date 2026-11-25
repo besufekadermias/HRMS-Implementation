@@ -1,6 +1,7 @@
 import {
   DEMO_LOGIN,
   DEMO_EMPLOYEE,
+  DEMO_ACCOUNTS,
   DEMO_PROFILE,
   DEMO_ATTENDANCE_SCHEDULE,
   DEMO_ATTENDANCE_HISTORY,
@@ -13,6 +14,7 @@ import {
   createDemoRewards,
 } from './data.js'
 import axios from 'axios'
+import { createDemoDepartmentStore } from './departmentData.js'
 import { passwordChangeRequestSchema } from '../utils/validation/passwordSchemas.js'
 import { validatePhoto } from '../utils/validation/profileSchemas.js'
 import { reportInputSchema, reportKeySchema } from '../utils/validation/reportSchemas.js'
@@ -62,16 +64,25 @@ async function matchesCredential(password, credential) {
 export function createDemoAdapter({
   now = () => new Date(),
   initialUser = DEMO_EMPLOYEE,
+  initialPassword = DEMO_LOGIN.password,
+  initialProfile = DEMO_PROFILE,
   initialLeave,
   initialCareer,
   initialRewards,
   initialReports,
+  initialPayroll,
+  initialAttendanceHistory,
+  departmentStore = createDemoDepartmentStore(),
+  registerEmployeeAccount = () => {},
   canSubmitReports = true,
 } = {}) {
   let signedIn = false
   let user = structuredClone(initialUser)
-  let profile = structuredClone(DEMO_PROFILE)
-  const payroll = createDemoPayrollRecords(user)
+  const loginIdentifiers = [initialUser.email, initialUser.login]
+    .filter(Boolean).map(value => value.trim().toLowerCase())
+  let profile = structuredClone(initialProfile)
+  const payroll = structuredClone(initialPayroll ?? createDemoPayrollRecords(user))
+  const attendanceHistory = structuredClone(initialAttendanceHistory ?? DEMO_ATTENDANCE_HISTORY)
   const career = structuredClone(initialCareer ?? createDemoCareerRecords(user.employeeId))
   const rewards = structuredClone(initialRewards ?? createDemoRewards(user.employeeId))
   let reports = structuredClone(initialReports ?? createDemoReports(user))
@@ -90,7 +101,7 @@ export function createDemoAdapter({
   let sessionVersion = 0
   function getCredentialPromise() {
     if (!credentialPromise) {
-      credentialPromise = createCredential(DEMO_LOGIN.password)
+      credentialPromise = createCredential(initialPassword)
     }
     return credentialPromise
   }
@@ -176,7 +187,7 @@ export function createDemoAdapter({
         typeof values?.password === 'string' &&
         (await matchesCredential(values.password, savedCredential))
       if (
-        values?.identifier?.trim().toLowerCase() !== DEMO_LOGIN.identifier ||
+        !loginIdentifiers.includes(values?.identifier?.trim().toLowerCase()) ||
         !matches ||
         values.portal !== 'employee' ||
         (await getCredentialPromise()) !== savedCredential
@@ -209,6 +220,40 @@ export function createDemoAdapter({
           'PASSWORD_CHANGE_REQUIRED',
           'Change your initial password before accessing employee services.',
         )
+      }
+      if (config.url?.startsWith('/department-head/')) {
+        if (user.mustChangePassword) fail(403, 'PASSWORD_CHANGE_REQUIRED', 'Complete password setup first.')
+        const today = getAttendanceState().date
+        const department = departmentStore.getData(user, today)
+        if (!department) fail(403, 'DEPARTMENT_ACCESS_DENIED', 'This workspace is reserved for the assigned department head.')
+        if (method === 'get' && config.url === '/department-head/employees/options') {
+          return { data: structuredClone(departmentStore.getOptions(user, today)), status: 200, config, headers: {} }
+        }
+        if (method === 'post' && config.url === '/department-head/employees') {
+          let values = typeof config.data === 'string' ? JSON.parse(config.data) : config.data
+          if (values instanceof FormData) {
+            const fields = values.get('employee')
+            try {
+              values = { ...JSON.parse(fields), photo: values.get('photo'), educationDocument: values.get('educationDocument') }
+            } catch {
+              fail(422, 'INVALID_EMPLOYEE', 'Employee details could not be read.')
+            }
+          }
+          const version = sessionVersion
+          const key = config.headers?.get?.('Idempotency-Key') || config.headers?.['Idempotency-Key']
+          const created = await departmentStore.createEmployee(user, values, key, today, fail, registerEmployeeAccount, () => {
+            if (!signedIn || version !== sessionVersion) fail(401, 'SESSION_EXPIRED', 'Your session changed. Sign in again.')
+          })
+          return { data: structuredClone(created), status: 201, config, headers: {} }
+        }
+        if (method !== 'get') fail(405, 'READ_ONLY', 'Team attendance changes are managed by HR.')
+        if (config.url === '/department-head/team') {
+          return { data: structuredClone({ department: department.department, employees: department.employees }), status: 200, config, headers: {} }
+        }
+        if (config.url === '/department-head/attendance') {
+          return { data: structuredClone(department), status: 200, config, headers: {} }
+        }
+        fail(404, 'NOT_FOUND', 'This department feature is unavailable.')
       }
       if (method === 'get' && config.url === '/auth/session') {
         data = {
@@ -520,7 +565,7 @@ export function createDemoAdapter({
           data = {
             employeeId: user.employeeId,
             timeZone: 'Africa/Addis_Ababa',
-            records: DEMO_ATTENDANCE_HISTORY.filter(
+            records: attendanceHistory.filter(
               (record) => record.date < getAttendanceState().date,
             ).slice(0, 30),
           }
@@ -544,8 +589,50 @@ export function createDemoAdapter({
     }
   }
   adapter.getLoginSuggestion = () => ({
-    identifier: DEMO_LOGIN.identifier,
-    password: passwordChanged ? '' : DEMO_LOGIN.password,
+    identifier: user.email,
+    password: passwordChanged ? '' : initialPassword,
   })
+  adapter.matchesIdentifier = identifier => typeof identifier === 'string' &&
+    loginIdentifiers.includes(identifier.trim().toLowerCase())
+  return adapter
+}
+
+// One active portal session, with separate in-memory data/passwords for each demo account.
+export function createDemoPortalAdapter() {
+  const departmentStore = createDemoDepartmentStore()
+  const accounts = []
+  function registerEmployeeAccount(user, password, profile) {
+    accounts.push({ role: 'EMPLOYEE', adapter: createDemoAdapter({
+      initialUser: user, initialPassword: password, initialProfile: profile, departmentStore,
+      initialPayroll: [], initialAttendanceHistory: [], initialCareer: [], initialRewards: [], initialReports: [],
+      initialLeave: { ...createDemoLeaveState(user.employeeId), balance: null, requests: [], canRequest: false,
+        message: 'HR has not assigned a leave entitlement.' },
+    }) })
+  }
+  accounts.push(...DEMO_ACCOUNTS.map(account => ({
+    role: account.user.role,
+    adapter: createDemoAdapter({ initialUser: account.user,
+      initialPassword: account.password, initialProfile: account.profile, departmentStore, registerEmployeeAccount }),
+  })))
+  let activeAdapter = null
+  async function adapter(config) {
+    const method = (config.method || 'get').toLowerCase()
+    if (method === 'post' && config.url === '/auth/login') {
+      const credentials = typeof config.data === 'string' ? JSON.parse(config.data) : config.data
+      const selected = accounts.find(account => account.adapter.matchesIdentifier(credentials?.identifier))
+      const nextAdapter = selected?.adapter || accounts[0].adapter
+      const response = await nextAdapter(config)
+      if (activeAdapter && activeAdapter !== nextAdapter) {
+        await activeAdapter({ ...config, method: 'post', url: '/auth/logout', data: undefined })
+      }
+      activeAdapter = nextAdapter
+      return response
+    }
+    const response = await (activeAdapter || accounts[0].adapter)(config)
+    if (method === 'post' && config.url === '/auth/logout') activeAdapter = null
+    return response
+  }
+  adapter.getLoginSuggestion = (role = 'EMPLOYEE') =>
+    accounts.find(account => account.role === role)?.adapter.getLoginSuggestion() ?? null
   return adapter
 }

@@ -6,6 +6,12 @@ import Login from './pages/Auth/Login.jsx'
 import Dashboard from './pages/Dashboard/Dashboard.jsx'
 import ChangePassword from './pages/Profile/ChangePassword.jsx'
 import EmployeeLayout from './layouts/main/EmployeeLayout.jsx'
+import { getHomePath, isDepartmentHead } from './utils/helpers/portalAccess.js'
+
+const DepartmentDashboard = lazy(() => import('./pages/Department/DepartmentDashboard.jsx'))
+const MyTeam = lazy(() => import('./pages/Department/MyTeam.jsx'))
+const AddTeamEmployee = lazy(() => import('./pages/Department/AddTeamEmployee.jsx'))
+const TeamAttendance = lazy(() => import('./pages/Department/TeamAttendance.jsx'))
 
 const MyProfile = lazy(() => import('./pages/Profile/MyProfile.jsx'))
 const MyAttendance = lazy(() => import('./pages/Attendance/MyAttendance.jsx'))
@@ -48,8 +54,13 @@ function SessionRoutes() {
     />
   )
 }
+function DepartmentRoutes() {
+  const user = useEmployeeStore(state => state.user)
+  const context = useOutletContext()
+  return isDepartmentHead(user) ? <Outlet context={context} /> : <Navigate to="/dashboard" replace />
+}
 export default function App() {
-  const { phase, sessionError, setUser, setSessionError } = useEmployeeStore()
+  const { user, phase, sessionError, setUser, setSessionError } = useEmployeeStore()
   useEffect(() => {
     const controller = new AbortController()
     restoreSession(controller.signal)
@@ -124,11 +135,17 @@ export default function App() {
             }
           />
           <Route element={<ProtectedRoutes />}>
+            <Route element={<DepartmentRoutes />}>
+              <Route path="/department" element={<Suspense fallback={<p role="status">Loading your department…</p>}><DepartmentDashboard /></Suspense>} />
+              <Route path="/department/team" element={<Suspense fallback={<p role="status">Loading your team…</p>}><MyTeam /></Suspense>} />
+              <Route path="/department/team/add" element={<Suspense fallback={<p role="status">Loading employee form…</p>}><AddTeamEmployee /></Suspense>} />
+              <Route path="/department/attendance" element={<Suspense fallback={<p role="status">Loading team attendance…</p>}><TeamAttendance /></Suspense>} />
+            </Route>
             <Route
               index
               element={
                 <Navigate
-                  to="/dashboard"
+                  to={getHomePath(user)}
                   replace
                 />
               }
@@ -221,7 +238,7 @@ export default function App() {
               path="*"
               element={
                 <Navigate
-                  to="/dashboard"
+                  to={getHomePath(user)}
                   replace
                 />
               }

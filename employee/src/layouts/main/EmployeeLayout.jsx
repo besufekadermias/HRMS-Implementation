@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard,
+  Users,
+  UserPlus,
   UserRound,
   Clock3,
   DollarSign,
@@ -20,6 +22,7 @@ import BrandMark from '../../components/common/BrandMark.jsx'
 import ConfirmDiscardDialog from '../../components/common/ConfirmDiscardDialog.jsx'
 import { useEmployeeStore } from '../../store/index.js'
 import { signOut } from '../../services/auth/authService.js'
+import { getHomePath, getPortalRoleLabel, isDepartmentHead } from '../../utils/helpers/portalAccess.js'
 
 const navigation = [
   ['/dashboard', 'Dashboard', LayoutDashboard],
@@ -46,11 +49,23 @@ export default function EmployeeLayout() {
     leaveDirty,
     reportBusy,
     reportDirty,
+    employeeBusy,
+    employeeDirty,
     notice,
     setNotice,
   } = useEmployeeStore()
-  const securityBusy = passwordBusy || profileBusy || attendanceBusy || leaveBusy || reportBusy
-  const formDirty = passwordDirty || profileDirty || leaveDirty || reportDirty
+  const securityBusy = passwordBusy || profileBusy || attendanceBusy || leaveBusy || reportBusy || employeeBusy
+  const departmentHead = isDepartmentHead(user)
+  const roleLabel = getPortalRoleLabel(user)
+  const homePath = getHomePath(user)
+  const items = departmentHead ? [
+    ['/department', 'Department Dashboard', LayoutDashboard],
+    ['/department/team', 'My Team', Users],
+    ['/department/team/add', 'Add Employee', UserPlus],
+    ['/department/attendance', 'Team Attendance', Clock3],
+    ...navigation.map(([path, label, Icon]) => [path, path === '/dashboard' ? 'My Dashboard' : label, Icon]),
+  ] : navigation
+  const formDirty = passwordDirty || profileDirty || leaveDirty || reportDirty || employeeDirty
   const location = useLocation()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
@@ -67,7 +82,7 @@ export default function EmployeeLayout() {
   const logoutLock = useRef(false)
   const initial = user.fullName.charAt(0).toUpperCase() || 'E'
   const dashboard = location.pathname === '/dashboard'
-  const active = navigation.find(
+  const active = items.find(
     ([path]) =>
       path === location.pathname ||
       (['/payroll', '/leave', '/reports'].includes(path) &&
@@ -199,6 +214,7 @@ export default function EmployeeLayout() {
           profile={profileDirty}
           leave={leaveDirty}
           report={reportDirty}
+          employee={employeeDirty}
           onCancel={() => setPendingAction(null)}
           onConfirm={discardAndContinue}
         />
@@ -238,19 +254,19 @@ export default function EmployeeLayout() {
         : ''
     }`}
         ref={sidebarRef}
-        aria-label="Employee navigation"
+        aria-label={departmentHead ? 'Department head navigation' : 'Employee navigation'}
         role={open ? 'dialog' : undefined}
         aria-modal={open || undefined}
       >
         <Link
-          to={user.mustChangePassword ? '/change-password' : '/dashboard'}
+          to={homePath}
           className={String.raw`sidebar-brand employee-base:flex employee-base:items-center employee-base:gap-[13px]
     employee-base:p-[25px_25px_28px] employee-base:[flex-shrink:0] employee-page:screen-compact:pl-[20px]
     employee-page:screen-compact:pr-[20px]`}
           aria-label="HRMS employee portal"
           aria-disabled={securityBusy}
           onClick={(event) =>
-            followRoute(event, user.mustChangePassword ? '/change-password' : '/dashboard')
+            followRoute(event, homePath)
           }
         >
           <BrandMark />
@@ -285,27 +301,17 @@ export default function EmployeeLayout() {
           className={String.raw`sidebar-label employee-base:p-[7px_31px_13px] employee-base:text-[color:#749d99]
     employee-base:text-[length:9px] employee-base:tracking-[1.6px] employee-base:font-[600]`}
         >
-          EMPLOYEE WORKSPACE
+          {departmentHead ? 'DEPARTMENT WORKSPACE' : 'EMPLOYEE WORKSPACE'}
         </p>
         <nav
           className={String.raw`sidebar-nav employee-base:p-[0_16px] employee-base:flex employee-base:flex-col employee-base:gap-[5px]`}
         >
-          {navigation.map(([path, label, Icon]) =>
-            ([
-              '/dashboard',
-              '/profile',
-              '/attendance',
-              '/payroll',
-              '/leave',
-              '/milestones',
-              '/rewards',
-              '/reports',
-            ].includes(path) &&
-              !user.mustChangePassword) ||
-            path === '/change-password' ? (
+          {items.map(([path, label, Icon]) =>
+            !user.mustChangePassword || path === '/change-password' ? (
               <NavLink
                 key={path}
                 to={path}
+                end={path === '/department' || path === '/department/team'}
                 className={({
                   isActive,
                 }) => String.raw`nav-link employee-base:flex employee-base:items-center employee-base:gap-[16px] employee-base:min-h-[46px]
@@ -399,7 +405,7 @@ export default function EmployeeLayout() {
               {initial}
             </span>
             <span className="min-w-0 flex-1">
-              <strong className="block text-[11px] font-semibold text-[#e2eeec]">Employee</strong>
+              <strong className="block text-[11px] font-semibold text-[#e2eeec]">{roleLabel}</strong>
               <span className="mt-1 block truncate text-[10px] text-[#91b0ad]">
                 {user.fullName}
               </span>
@@ -536,7 +542,7 @@ export default function EmployeeLayout() {
     employee-page:screen-max-768:hidden`}
                 >
                   <strong>{user.fullName}</strong>
-                  <small>Employee</small>
+                  <small>{roleLabel}</small>
                 </span>
                 <ChevronDown
                   size={16}
@@ -645,7 +651,7 @@ export default function EmployeeLayout() {
               </button>
             </div>
           )}
-          <Outlet context={{ search }} />
+          <Outlet context={{ search, onSearch: setSearch, onNavigate: followRoute }} />
           <footer
             className={String.raw`portal-footer employee-base:flex employee-base:items-center employee-base:justify-between
     employee-base:gap-[15px] employee-base:p-[20px_0] employee-base:text-[color:#74909b]

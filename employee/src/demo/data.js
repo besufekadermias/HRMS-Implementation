@@ -1,34 +1,51 @@
 import { getLeaveYear } from '../utils/helpers/leaveRules.js'
+import { INITIAL_EMPLOYEES, INITIAL_DEPARTMENTS } from '../../../admin/src/demo/workforce.js'
 
 // Synthetic samples only. All live records must come from the backend.
 
 // Account, profile, payroll, attendance, and announcements
 
-// Matches the employee named Tedwodros Kifle (T2323) in admin's demo records.
-export const DEMO_LOGIN = { identifier: 'tiblet', password: 'HRMS-demo-2026' }
-export const DEMO_EMPLOYEE = {
-  id: 'DEMO-USER-001',
-  fullName: 'Tedwodros Kifle',
-  login: DEMO_LOGIN.identifier,
-  role: 'EMPLOYEE',
-  department: 'Cybersecurity & Quality Assurance',
-  employeeId: 'DEMO-EMPLOYEE-001',
-  serialNumber: 'T2323',
-  // This is a returning demo account so Login and Dashboard can be previewed.
-  mustChangePassword: false,
-  passwordChangedAt: '2026-11-01T06:00:00.000Z',
-  grade: 'Grade II (Associate)',
-  baseSalary: 11200,
-  employmentStatus: 'ACTIVE',
-  employmentType: 'PERMANENT',
+// One source for demo people: admin's separate roster. No duplicate names or assignments.
+export const DEMO_ROSTER = INITIAL_EMPLOYEES.map(record => {
+  const department = INITIAL_DEPARTMENTS.find(item => item.name === record.department)
+  if (!department) throw new Error(`Admin demo department is missing for ${record.id}.`)
+  return {
+    id: `DEMO-USER-${record.id}`, employeeId: `DEMO-EMPLOYEE-${record.id}`,
+    serialNumber: record.id, fullName: record.name,
+    email: record.email.includes('@') ? record.email.trim().toLowerCase() : null,
+    login: record.email, department: department.name, departmentId: String(department.id),
+    role: department.headId === record.id ? 'DEPARTMENT_HEAD' : record.portalRole === 'HR Manager' ? 'HR_MANAGER' : 'EMPLOYEE',
+    grade: record.grade, baseSalary: record.basicSalary,
+    employmentStatus: ['Active', 'On Leave'].includes(record.status) ? 'ACTIVE' : record.status.toUpperCase().replaceAll(' ', '_'),
+    employmentType: 'PERMANENT', mustChangePassword: false,
+    passwordChangedAt: '2026-11-01T06:00:00.000Z',
+  }
+})
+
+function demoAccount(serialNumber) {
+  const user = DEMO_ROSTER.find(employee => employee.serialNumber === serialNumber)
+  if (!user?.email) throw new Error(`Admin demo employee ${serialNumber} needs a registered email.`)
+  return { ...user, login: user.email }
 }
-export const DEMO_PROFILE = {
-  qualification: 'BSc in Computer Science',
-  gender: 'Female',
-  birthDate: '1992-07-25',
-  hiredDate: '2026-10-24',
-  photoUrl: null,
+
+function demoProfile(serialNumber) {
+  const record = INITIAL_EMPLOYEES.find(employee => employee.id === serialNumber)
+  return { qualification: record.qualification || null, gender: record.gender || null,
+    birthDate: record.birthDate || null, hiredDate: record.hiredDate || null, photoUrl: null }
 }
+
+export const DEMO_EMPLOYEE = demoAccount('T2323')
+const headDepartment = INITIAL_DEPARTMENTS.find(department => department.id === 5)
+export const DEMO_HEAD = demoAccount(headDepartment.headId)
+export const DEMO_LOGIN = { identifier: DEMO_EMPLOYEE.email, password: 'HRMS-demo-2026' }
+export const DEMO_HEAD_LOGIN = { identifier: DEMO_HEAD.email, password: 'HRMS-head-2026' }
+export const DEMO_PROFILE = demoProfile(DEMO_EMPLOYEE.serialNumber)
+export const DEMO_ACCOUNTS = [
+  { user: DEMO_EMPLOYEE, password: DEMO_LOGIN.password, profile: DEMO_PROFILE },
+  { user: DEMO_HEAD, password: DEMO_HEAD_LOGIN.password,
+    profile: demoProfile(DEMO_HEAD.serialNumber) },
+]
+
 export const DEMO_ATTENDANCE_SCHEDULE = { startTime: '08:00', endTime: '17:00', gracePeriod: '15' }
 // Historical sample payroll amounts, independent of the current salary/policy.
 export function createDemoPayrollRecords(employee = DEMO_EMPLOYEE) {

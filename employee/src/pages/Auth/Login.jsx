@@ -1,11 +1,14 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Navigate } from 'react-router-dom'
-import { loginSchema } from '../../utils/validation/authSchemas.js'
-import { signIn, getDemoLogin } from '../../services/auth/authService.js'
+import { emailLoginSchema } from '../../utils/validation/authSchemas.js'
+import { signIn } from '../../services/auth/authService.js'
 import { useEmployeeStore } from '../../store/index.js'
-import { USE_DEMO_API } from '../../config/api.js'
+import { getHomePath } from '../../utils/helpers/portalAccess.js'
+
+const DemoLoginControls = (import.meta.env.VITE_API_MODE || 'demo') === 'demo'
+  ? lazy(() => import('../../demo/DemoLoginControls.jsx')) : null
 
 export default function Login() {
   const { user, setUser } = useEmployeeStore()
@@ -18,16 +21,15 @@ export default function Login() {
     formState: { errors, isSubmitting },
   } = useForm({
     defaultValues: { identifier: '', password: '' },
-    resolver: zodResolver(loginSchema),
+    resolver: zodResolver(emailLoginSchema),
   })
   if (user)
     return (
       <Navigate
-        to={user.mustChangePassword ? '/change-password' : '/dashboard'}
+        to={getHomePath(user)}
         replace
       />
     )
-  const demoLogin = getDemoLogin()
 
   async function submit(values) {
     setError('')
@@ -61,9 +63,9 @@ export default function Login() {
           height="42"
         />
         <p className="mb-3 text-[13px] font-semibold text-primary">Hadiya Science HRMS</p>
-        <h1 id="login-title">Employee login</h1>
+        <h1 id="login-title">Employee portal login</h1>
         <p className="mt-2.5 text-[13px] leading-[1.6] text-text-secondary">
-          Welcome back. Sign in to your employee workspace.
+          Employees and department heads sign in with their registered email.
         </p>
         <form
           className="mt-7 space-y-5"
@@ -72,11 +74,12 @@ export default function Login() {
           aria-busy={isSubmitting}
         >
           <div>
-            <label htmlFor="identifier">Username or email</label>
+            <label htmlFor="identifier">Email</label>
             <input
               id="identifier"
               autoComplete="username"
-              placeholder="Enter your username or email"
+              type="email"
+              placeholder="Enter your registered email"
               {...register('identifier', { onChange: () => setError('') })}
               disabled={isSubmitting}
               aria-invalid={!!errors.identifier}
@@ -150,36 +153,13 @@ export default function Login() {
             {isSubmitting ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
-        {USE_DEMO_API && (
-          <>
-            <button
-              className={String.raw`secondary-button mt-3 w-full employee-base:inline-flex employee-base:min-h-[42px] employee-base:items-center
-    employee-base:justify-center employee-base:gap-[9px] employee-base:p-[10px_17px]
-    employee-base:[border:1px_solid_#d6e4e8] employee-base:rounded-[7px] employee-base:[background:white]
-    employee-base:text-[color:var(--text-secondary)] employee-base:font-[600] employee-base:text-[length:13px]
-    employee-base:leading-[1.4] employee-base:[box-shadow:none] employee-base:[transition:background_0.15s]
-    employee-base:[border-color:#d6e4e8] employee-base:[&:hover:not(:disabled)]:[background:var(--search-bg)]`}
-              type="button"
-              disabled={isSubmitting}
-              onClick={() => {
-                reset(demoLogin)
-                setError('')
-                setVisible(false)
-              }}
-            >
-              {demoLogin?.password ? 'Use demo account' : 'Use demo email'}
-            </button>
-            <p className="mt-4 text-center text-[11px] leading-[1.6] text-muted">
-              Demo preview · Sample account
-            </p>
-            {!demoLogin?.password && (
-              <p className="mt-2 text-center text-[11px] leading-[1.6] text-muted">
-                Enter the new password you saved in this tab. Reload restores the original demo
-                account.
-              </p>
-            )}
-          </>
-        )}
+        {DemoLoginControls && <Suspense fallback={null}>
+          <DemoLoginControls disabled={isSubmitting} onSelect={credentials => {
+            reset(credentials)
+            setError('')
+            setVisible(false)
+          }} />
+        </Suspense>}
         <p className="mt-5 text-center text-[11px] leading-[1.6] text-muted">
           First time here? You’ll set a new password before entering your dashboard.
         </p>

@@ -7,6 +7,7 @@ export default function ConfirmDiscardDialog({
   profile = false,
   leave = false,
   report = false,
+  employee = false,
 }) {
   const dialogRef = useRef(null)
   useEffect(() => {
@@ -36,7 +37,9 @@ export default function ConfirmDiscardDialog({
         id="discard-password-title"
         className="text-[19px]"
       >
-        {report
+        {employee
+          ? 'Discard this employee form?'
+          : report
           ? 'Discard this report?'
           : leave
             ? 'Discard this leave request?'
@@ -48,7 +51,9 @@ export default function ConfirmDiscardDialog({
         id="discard-password-description"
         className="mt-3 text-[13px] leading-[1.8] text-text-secondary"
       >
-        {report
+        {employee
+          ? 'This employee has not been saved. Keep editing or leave this page.'
+          : report
           ? 'Your report has not been submitted. Keep editing or leave this page.'
           : leave
             ? 'Your leave request has not been submitted. Keep editing or leave this page.'

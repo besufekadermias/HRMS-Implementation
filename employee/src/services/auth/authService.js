@@ -1,7 +1,6 @@
 import api from '../api/api.js'
-import { loginSchema, userSchema } from '../../utils/validation/authSchemas.js'
+import { emailLoginSchema, readLoginUser, userSchema } from '../../utils/validation/authSchemas.js'
 import { passwordChangeSchema } from '../../utils/validation/passwordSchemas.js'
-export { getDemoLogin } from '../api/api.js'
 function readUser(value) {
   const parsed = userSchema.safeParse(value)
   if (!parsed.success) {
@@ -10,11 +9,12 @@ function readUser(value) {
   return parsed.data
 }
 export async function signIn(values) {
+  const credentials = emailLoginSchema.parse(values)
   const { data } = await api.post('/auth/login', {
-    ...loginSchema.parse(values),
+    ...credentials,
     portal: 'employee',
   })
-  return readUser(data.user)
+  return readLoginUser(readUser(data.user), credentials.identifier)
 }
 export async function restoreSession(signal) {
   try {
