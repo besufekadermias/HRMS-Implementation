@@ -1,3 +1,5 @@
+import { INITIAL_DEPARTMENTS } from '../../demo/workforce.js'
+export { INITIAL_EMPLOYEES, INITIAL_DEPARTMENTS, JOB_GRADES } from '../../demo/workforce.js'
 // Initial dashboard values transcribed from dashboard.png.
 export const SNAPSHOT_DATE = "2026-11-02";
 
@@ -135,87 +137,7 @@ export const INITIAL_PAYROLL_RUNS = [
     ],
   },
 ];
-export const INITIAL_EMPLOYEES = [
-  {
-    id: "Epy123",
-    name: "Besufekad Ermias",
-    email: "babi",
-    qualification: "Diploma",
-    basicSalary: 11200,
-    department: "Database & Cloud Administration",
-    grade: "Grade II (Associate)",
-    status: "Active",
-    hiredDate: "2026-10-30",
-  },
-  {
-    id: "T2323",
-    name: "Tedwodros Kifle",
-    email: "tiblet",
-    qualification: "Bcs",
-    basicSalary: 11200,
-    department: "Cybersecurity & Quality Assurance",
-    grade: "Grade II (Associate)",
-    status: "Active",
-    hiredDate: "2026-10-24",
-  },
-  {
-    id: "5601",
-    name: "Tesfaye Alemayew",
-    email: "alemayeh150@gmail.com",
-    qualification: "BCS",
-    basicSalary: 24000,
-    department: "Software Engineering",
-    grade: "Grade IV",
-    status: "Active",
-    hiredDate: "2026-10-21",
-  },
-  {
-    id: "2121",
-    name: "Tsedeke Wondimu",
-    email: "Tesfaye",
-    qualification: "BCS",
-    basicSalary: 24000,
-    department: "Cybersecurity & Quality Assurance",
-    grade: "Grade IV",
-    status: "Active",
-    hiredDate: "2026-10-22",
-  },
-  {
-    id: "HD-IT-001",
-    name: "Sisay Kebede",
-    email: "emp001",
-    qualification: "MSc in Computer Science",
-    basicSalary: 16500,
-    department: "Hadiya Science Information Technology",
-    grade: "Grade III (Senior)",
-    status: "Active",
-    hiredDate: "2022-01-13",
-  },
-];
-
-// Initial departments based on Department.png.
-// Heads and descriptions stay empty until entered by the user.
-export const INITIAL_DEPARTMENTS = [
-  { id: 5, name: "Cybersecurity & Quality Assurance", code: "CQA" },
-  { id: 4, name: "Database & Cloud Administration", code: "DCA" },
-  { id: 1, name: "Hadiya Science Information Technology", code: "HSIT" },
-  { id: 3, name: "Network & Infrastructure", code: "NET" },
-  { id: 11, name: "Software Engineering", code: "SWE" },
-].map((department) => ({
-  ...department,
-  description: "",
-  headId: "",
-  status: "Active",
-}));
 export const DEPARTMENTS = INITIAL_DEPARTMENTS.map(({ name }) => name);
-// Five visible records from gradeandsacles.png; similar titles stay distinct.
-export const JOB_GRADES = [
-  { id: 2, name: "Grade II (Associate)", salary: 11200 },
-  { id: 5, name: "Grade II", salary: 11200 },
-  { id: 3, name: "Grade III (Senior)", salary: 16500 },
-  { id: 6, name: "Grade III", salary: 16500 },
-  { id: 7, name: "Grade IV", salary: 24000 },
-];
 export const EMPLOYEE_STATUSES = [
   "Active",
   "On Leave",

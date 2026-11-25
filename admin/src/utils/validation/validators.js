@@ -2,6 +2,7 @@ import { todayInNairobi } from './dates.js';
 export { todayInNairobi, isValidDate } from './dates.js';
 import { fieldErrors } from './schemaHelpers.js';
 import { getEmployeeSchema, departmentSchema, jobGradeSchema } from './workforceSchemas.js';
+import { canAssignDepartmentHead, isAccountEmail, normalizeAccountLogin } from '../helpers/accountIdentity.js';
 import {
   DEPARTMENTS,
   JOB_GRADES,
@@ -25,12 +26,18 @@ export function validateEmployeeRules(
 ) {
   if (!values || typeof values !== 'object') return errors;
   const id = typeof values.id === 'string' ? values.id.trim() : '';
-  const login = typeof values.email === 'string' ? values.email.trim() : '';
+  const login = normalizeAccountLogin(values.email);
   const others = employees.filter(employee => employee.id !== originalId);
   if (!errors.id && others.some(employee => employee.id.toLowerCase() === id.toLowerCase()))
     errors.id = 'This employee ID is already in use.';
   if (!errors.email && others.some(employee => employee.email?.toLowerCase() === login.toLowerCase()))
     errors.email = 'This email or login ID is already in use.';
+  if (values.portalRole === 'Head of Department') {
+    if (!errors.email && !isAccountEmail(login))
+      errors.email = 'A department head needs a registered email address.';
+    if (!['Active', 'On Leave'].includes(values.status))
+      errors.portalRole = 'A department head must have an Active or On Leave employment status.';
+  }
   if (!departments.includes(values.department)) errors.department = 'Select a department.';
   if (!grades.some(grade => grade.name === values.grade)) errors.grade = 'Select a civil job grade.';
   if (!importMode && !errors.birthDate) {
@@ -58,6 +65,11 @@ export function validateDepartmentRules(values, departments, employees, errors =
   const original = departments.find(department => department.id === values.id);
   if (values.headId && !employees.some(employee => employee.id === values.headId && employee.department === original?.name))
     errors.headId = 'Choose an employee assigned to this department.';
+  const head = employees.find(employee => employee.id === values.headId);
+  if (values.headId && !errors.headId && !canAssignDepartmentHead(head))
+    errors.headId = 'Choose active staff with a registered email. HR Manager accounts cannot be department heads.';
+  if (values.headId && values.status !== 'Active')
+    errors.headId = 'Clear the department head before making this department inactive.';
   return errors;
 }
 

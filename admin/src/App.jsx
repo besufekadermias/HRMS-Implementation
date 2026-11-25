@@ -55,8 +55,8 @@ import { buildDashboardSummary } from './services/dashboard/dashboardService.js'
 import {
   saveDepartment,
   deleteDepartment,
-  reconcileDepartmentHeads,
 } from './services/workforce/departmentService.js'
+import { saveEmployeeAccount } from './services/workforce/accountService.js'
 import {
   saveJobGrade,
   deleteJobGrade,
@@ -300,13 +300,7 @@ export default function App() {
 
   function saveEmployee(employee, originalId) {
     const original = employees.find((item) => item.id === originalId)
-    const next = originalId
-      ? employees.map((item) => (item.id === originalId ? employee : item))
-      : [employee, ...employees]
-    setWorkforce({
-      employees: next,
-      departments: reconcileDepartmentHeads(departments, next, originalId, employee.id),
-    })
+    setWorkforce(saveEmployeeAccount(departments, employees, employee, originalId))
     if (originalId && originalId !== employee.id) {
       leave.remapEmployeeId(originalId, employee.id)
       setRewards((current) => current.map((reward) => reward.employeeId === originalId
@@ -338,7 +332,7 @@ export default function App() {
   function removeEmployee(id) {
     const removed = employees.find((employee) => employee.id === id)
     const next = employees.filter((employee) => employee.id !== id)
-    setWorkforce({ employees: next, departments: reconcileDepartmentHeads(departments, next) })
+    setWorkforce({ employees: next })
     // Match the rewards table's employee foreign key (ON DELETE CASCADE).
     setRewards((current) => current.filter((reward) => reward.employeeId !== id))
     setDiscipline((current) => removeEmployeeDiscipline(current, id))

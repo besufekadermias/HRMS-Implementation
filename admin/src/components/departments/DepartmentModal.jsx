@@ -8,6 +8,7 @@ import ConfirmationModal from '../common/ConfirmationModal.jsx'
 import Icon from '../common/Icon.jsx'
 import { validateDepartmentRules } from '../../utils/validation/validators.js'
 import { departmentSchema } from '../../utils/validation/workforceSchemas.js'
+import { canAssignDepartmentHead } from '../../utils/helpers/accountIdentity.js'
 
 export default function DepartmentModal({
   department,
@@ -30,7 +31,7 @@ export default function DepartmentModal({
   const status = useWatch({ control, name: 'status' })
   const [confirmDiscard, setConfirmDiscard] = useState(false)
   const staff = employees.filter(
-    (employee) => employee.department === department?.name,
+    (employee) => employee.department === department?.name && canAssignDepartmentHead(employee),
   )
 
   useEffect(() => {
@@ -178,8 +179,8 @@ export default function DepartmentModal({
             <small className="field-hint tw:shared-base:block tw:shared-base:text-[10px] tw:shared-base:font-normal
           tw:shared-base:[color:var(--text-muted)] tw:shared-base:mt-[7px]" id="department-head-hint">
               {staff.length
-                ? 'Choose a staff member from this department.'
-                : 'Assign employees to this department before choosing a head.'}
+                ? 'Choose active staff with a registered email. Saving also updates their portal role.'
+                : 'Add active staff with a registered email to this department before choosing a head.'}
             </small>
             {errors.headId && (
               <small className="field-error tw:shared-base:block tw:shared-base:text-[11px] tw:shared-base:font-normal

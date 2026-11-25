@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { EMPLOYEE_STATUSES, EMPLOYMENT_TYPES, PORTAL_ROLES } from '../constants/constants.js'
 import { dateField, text } from './schemaHelpers.js'
+import { isAccountEmail, normalizeAccountLogin } from '../helpers/accountIdentity.js'
 
 export const employeeSchema = z.object({
   id: z.string({ error: 'Use 1–30 letters, numbers, hyphens, or underscores.' }).trim()
@@ -27,6 +28,8 @@ export function getEmployeeSchema({ importMode = false, originalId = null } = {}
   if (importMode) return employeeSchema
   if (originalId) return employeeFormSchema
   return employeeFormSchema.extend({
+    email: z.string().transform(normalizeAccountLogin)
+      .refine(isAccountEmail, 'Enter a registered email address of up to 100 characters.'),
     temporaryPassword: z.string({ error: 'Use at least 8 characters.' })
       .min(8, 'Use at least 8 characters.'),
   })

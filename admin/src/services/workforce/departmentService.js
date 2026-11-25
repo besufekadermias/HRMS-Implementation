@@ -1,4 +1,5 @@
 import { validateDepartment } from "../../utils/validation/validators.js";
+import { synchronizeDepartmentAccounts } from './accountService.js';
 
 // Keep department assignments and employee records consistent.
 export function saveDepartment(departments, employees, values) {
@@ -16,19 +17,14 @@ export function saveDepartment(departments, employees, values) {
     headId: values.headId || "",
     status: values.status,
   };
-  return {
-    department,
-    departments: original
-      ? departments.map((item) => (item.id === original.id ? department : item))
-      : [...departments, department],
-    employees: original
-      ? employees.map((employee) =>
-          employee.department === original.name
-            ? { ...employee, department: department.name }
-            : employee,
-        )
-      : employees,
-  };
+  const nextDepartments = original
+    ? departments.map((item) => item.id === original.id ? department : item)
+    : [...departments, department];
+  const nextEmployees = original
+    ? employees.map((employee) => employee.department === original.name
+        ? { ...employee, department: department.name } : employee)
+    : employees;
+  return { department, ...synchronizeDepartmentAccounts(nextDepartments, nextEmployees) };
 }
 
 export function deleteDepartment(departments, employees, id) {
@@ -39,28 +35,4 @@ export function deleteDepartment(departments, employees, id) {
       "Move this department’s employees to another department before deleting it.",
     );
   return departments.filter((item) => item.id !== id);
-}
-
-// Keep head assignments valid after an employee is moved, renamed, or deleted.
-export function reconcileDepartmentHeads(
-  departments,
-  employees,
-  originalId,
-  nextId,
-) {
-  return departments.map((department) => {
-    const headId =
-      originalId && department.headId === originalId
-        ? nextId
-        : department.headId;
-    return {
-      ...department,
-      headId: employees.some(
-        (employee) =>
-          employee.id === headId && employee.department === department.name,
-      )
-        ? headId
-        : "",
-    };
-  });
 }
